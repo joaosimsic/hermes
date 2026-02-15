@@ -28,6 +28,8 @@
           <useTitleAsClassname>true</useTitleAsClassname>
           <includeConstructors>true</includeConstructors>
           <includeAdditionalProperties>false</includeAdditionalProperties>
+          <useLongIntegers>true</useLongIntegers>
+          <dateTimeType>java.time.Instant</dateTimeType>
         </configuration>
         <executions>
           <execution>
