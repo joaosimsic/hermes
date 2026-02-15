@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hermes.com/schemas/events/auth/email-updated.v1.schema.json",
+  "title": "EmailUpdatedEvent",
+  "type": "object",
+  "properties": {
+    "externalId": { "type": "string" },
+    "newEmail": { "type": "string" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "eventType": { "type": "string", "default": "USER_REGISTERED" }
+  },
+  "required": ["externalId", "newEmail", "occurredAt", "eventType"],
+  "additionalProperties": false
+}

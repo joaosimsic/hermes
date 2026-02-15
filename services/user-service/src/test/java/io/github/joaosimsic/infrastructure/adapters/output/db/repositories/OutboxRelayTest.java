@@ -1,7 +1,6 @@
 package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,12 +12,11 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.joaosimsic.core.domain.OutboxEntry;
-import io.github.joaosimsic.core.events.DomainEvent;
-import io.github.joaosimsic.core.events.UserCreatedEvent;
-import io.github.joaosimsic.core.events.UserDeletedEvent;
-import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
+import io.github.joaosimsic.events.user.UserCreatedEvent;
+import io.github.joaosimsic.events.user.UserDeletedEvent;
+import io.github.joaosimsic.events.user.UserUpdatedEvent;
 import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import java.time.Instant;
 import java.util.List;
@@ -51,11 +49,9 @@ class OutboxRelayTest {
   @BeforeEach
   void setUp() {
     objectMapper = new ObjectMapper();
-
     objectMapper.registerModule(new JavaTimeModule());
 
     outboxProperties = new OutboxProperties();
-
     outboxProperties.setBatchSize(20);
     outboxProperties.setMaxAttempts(5);
 
@@ -73,7 +69,10 @@ class OutboxRelayTest {
 
       outboxRelay.processOutbox();
 
-      verify(messagePublisher, never()).publish(any(DomainEvent.class));
+      // Verify no publish method was called for any event type
+      verify(messagePublisher, never()).publish(any(UserCreatedEvent.class));
+      verify(messagePublisher, never()).publish(any(UserUpdatedEvent.class));
+      verify(messagePublisher, never()).publish(any(UserDeletedEvent.class));
       verify(outboxPort, never()).markAsProcessed(any());
     }
 
@@ -89,7 +88,7 @@ class OutboxRelayTest {
       outboxRelay.processOutbox();
 
       verify(outboxPort).markAsFailed(eq(entryId), anyString());
-      verify(messagePublisher, never()).publish(any());
+      verify(messagePublisher, never()).publish(any(UserCreatedEvent.class));
     }
 
     @Test
@@ -99,7 +98,7 @@ class OutboxRelayTest {
       Instant occurredAt = Instant.parse("2026-02-07T10:00:00Z");
       String payload =
           """
-          {"userId":1,"email":"john@example.com","name":"John Doe","occurredAt":"2026-02-07T10:00:00Z"}
+          {"aggregateId":1,"email":"john@example.com","name":"John Doe","occurredAt":"2026-02-07T10:00:00Z","eventType":"USER_CREATED"}
           """;
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "USER_CREATED", payload, 0);
@@ -108,17 +107,15 @@ class OutboxRelayTest {
 
       outboxRelay.processOutbox();
 
-      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
+      ArgumentCaptor<UserCreatedEvent> eventCaptor =
+          ArgumentCaptor.forClass(UserCreatedEvent.class);
       verify(messagePublisher).publish(eventCaptor.capture());
 
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserCreatedEvent.class, capturedEvent);
-
-      UserCreatedEvent event = (UserCreatedEvent) capturedEvent;
-      assertEquals(1L, event.userId());
-      assertEquals("john@example.com", event.email());
-      assertEquals("John Doe", event.name());
-      assertEquals(occurredAt, event.occurredAt());
+      UserCreatedEvent event = eventCaptor.getValue();
+      assertEquals(1L, event.getAggregateId());
+      assertEquals("john@example.com", event.getEmail());
+      assertEquals("John Doe", event.getName());
+      assertEquals(occurredAt, event.getOccurredAt());
 
       verify(outboxPort).markAsProcessed(List.of(entryId));
     }
@@ -130,7 +127,7 @@ class OutboxRelayTest {
       Instant occurredAt = Instant.parse("2026-02-07T11:00:00Z");
       String payload =
           """
-          {"userId":2,"email":"jane.updated@example.com","name":"Jane Updated","occurredAt":"2026-02-07T11:00:00Z"}
+          {"aggregateId":2,"email":"jane.updated@example.com","name":"Jane Updated","occurredAt":"2026-02-07T11:00:00Z","eventType":"USER_UPDATED"}
           """;
 
       OutboxEntry entry = new OutboxEntry(entryId, "2", "User", "USER_UPDATED", payload, 0);
@@ -139,17 +136,15 @@ class OutboxRelayTest {
 
       outboxRelay.processOutbox();
 
-      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
+      ArgumentCaptor<UserUpdatedEvent> eventCaptor =
+          ArgumentCaptor.forClass(UserUpdatedEvent.class);
       verify(messagePublisher).publish(eventCaptor.capture());
 
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserUpdatedEvent.class, capturedEvent);
-
-      UserUpdatedEvent event = (UserUpdatedEvent) capturedEvent;
-      assertEquals(2L, event.userId());
-      assertEquals("jane.updated@example.com", event.email());
-      assertEquals("Jane Updated", event.name());
-      assertEquals(occurredAt, event.occurredAt());
+      UserUpdatedEvent event = eventCaptor.getValue();
+      assertEquals(2L, event.getAggregateId());
+      assertEquals("jane.updated@example.com", event.getEmail());
+      assertEquals("Jane Updated", event.getName());
+      assertEquals(occurredAt, event.getOccurredAt());
 
       verify(outboxPort).markAsProcessed(List.of(entryId));
     }
@@ -161,7 +156,7 @@ class OutboxRelayTest {
       Instant occurredAt = Instant.parse("2026-02-07T12:00:00Z");
       String payload =
           """
-          {"userId":3,"occurredAt":"2026-02-07T12:00:00Z"}
+          {"aggregateId":3,"occurredAt":"2026-02-07T12:00:00Z","eventType":"USER_DELETED"}
           """;
 
       OutboxEntry entry = new OutboxEntry(entryId, "3", "User", "USER_DELETED", payload, 0);
@@ -170,15 +165,13 @@ class OutboxRelayTest {
 
       outboxRelay.processOutbox();
 
-      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
+      ArgumentCaptor<UserDeletedEvent> eventCaptor =
+          ArgumentCaptor.forClass(UserDeletedEvent.class);
       verify(messagePublisher).publish(eventCaptor.capture());
 
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserDeletedEvent.class, capturedEvent);
-
-      UserDeletedEvent event = (UserDeletedEvent) capturedEvent;
-      assertEquals(3L, event.userId());
-      assertEquals(occurredAt, event.occurredAt());
+      UserDeletedEvent event = eventCaptor.getValue();
+      assertEquals(3L, event.getAggregateId());
+      assertEquals(occurredAt, event.getOccurredAt());
 
       verify(outboxPort).markAsProcessed(List.of(entryId));
     }
@@ -198,7 +191,7 @@ class OutboxRelayTest {
 
       outboxRelay.processOutbox();
 
-      verify(messagePublisher, never()).publish(any(DomainEvent.class));
+      verify(messagePublisher, never()).publish(any(UserCreatedEvent.class));
       verify(outboxPort).incrementAttempt(eq(entryId), anyString());
       verify(outboxPort, never()).markAsProcessed(any());
     }
@@ -215,7 +208,7 @@ class OutboxRelayTest {
 
       outboxRelay.processOutbox();
 
-      verify(messagePublisher, never()).publish(any(DomainEvent.class));
+      verify(messagePublisher, never()).publish(any(UserCreatedEvent.class));
       verify(outboxPort).incrementAttempt(eq(entryId), anyString());
       verify(outboxPort, never()).markAsProcessed(any());
     }
@@ -226,7 +219,7 @@ class OutboxRelayTest {
       UUID entryId = UUID.randomUUID();
       String payload =
           """
-          {"userId":1,"email":"john@example.com","name":"John Doe","occurredAt":"2026-02-07T10:00:00Z"}
+          {"aggregateId":1,"email":"john@example.com","name":"John Doe","occurredAt":"2026-02-07T10:00:00Z","eventType":"USER_CREATED"}
           """;
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "USER_CREATED", payload, 0);
@@ -234,7 +227,7 @@ class OutboxRelayTest {
       when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
       doThrow(new RuntimeException("Connection failed"))
           .when(messagePublisher)
-          .publish(any(DomainEvent.class));
+          .publish(any(UserCreatedEvent.class));
 
       outboxRelay.processOutbox();
 
@@ -251,15 +244,15 @@ class OutboxRelayTest {
 
       String payload1 =
           """
-          {"userId":1,"email":"user1@example.com","name":"User One","occurredAt":"2026-02-07T10:00:00Z"}
+          {"aggregateId":1,"email":"user1@example.com","name":"User One","occurredAt":"2026-02-07T10:00:00Z","eventType":"USER_CREATED"}
           """;
       String payload2 =
           """
-          {"userId":2,"email":"user2@example.com","name":"User Two","occurredAt":"2026-02-07T11:00:00Z"}
+          {"aggregateId":2,"email":"user2@example.com","name":"User Two","occurredAt":"2026-02-07T11:00:00Z","eventType":"USER_UPDATED"}
           """;
       String payload3 =
           """
-          {"userId":3,"occurredAt":"2026-02-07T12:00:00Z"}
+          {"aggregateId":3,"occurredAt":"2026-02-07T12:00:00Z","eventType":"USER_DELETED"}
           """;
 
       OutboxEntry entry1 = new OutboxEntry(entryId1, "1", "User", "USER_CREATED", payload1, 0);
@@ -289,7 +282,7 @@ class OutboxRelayTest {
       String payload1 = "{ invalid json }";
       String payload2 =
           """
-          {"userId":2,"occurredAt":"2026-02-07T12:00:00Z"}
+          {"aggregateId":2,"occurredAt":"2026-02-07T12:00:00Z","eventType":"USER_DELETED"}
           """;
 
       OutboxEntry entry1 = new OutboxEntry(entryId1, "1", "User", "USER_CREATED", payload1, 0);

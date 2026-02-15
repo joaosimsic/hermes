@@ -1,15 +1,15 @@
 package io.github.joaosimsic.core.services;
 
 import io.github.joaosimsic.core.domain.User;
-import io.github.joaosimsic.core.events.UserCreatedEvent;
-import io.github.joaosimsic.core.events.UserDeletedEvent;
-import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.exceptions.business.*;
 import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.core.ports.output.UserPort;
+import io.github.joaosimsic.events.user.UserCreatedEvent;
+import io.github.joaosimsic.events.user.UserDeletedEvent;
+import io.github.joaosimsic.events.user.UserUpdatedEvent;
+import java.time.Instant;
 import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +36,12 @@ public class UserService implements UserUseCase {
     User savedUser = userPort.save(user);
 
     UserCreatedEvent event =
-        new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName());
+        new UserCreatedEvent()
+            .withAggregateId(savedUser.getId())
+            .withEmail(savedUser.getEmail())
+            .withName(savedUser.getName())
+            .withOccurredAt(Instant.now())
+            .withEventType("USER_CREATED");
 
     outboxPort.save(event);
 
@@ -98,7 +103,12 @@ public class UserService implements UserUseCase {
     User savedUser = userPort.save(newUser);
 
     UserCreatedEvent event =
-        new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName());
+        new UserCreatedEvent()
+            .withAggregateId(savedUser.getId())
+            .withEmail(savedUser.getEmail())
+            .withName(savedUser.getName())
+            .withOccurredAt(Instant.now())
+            .withEventType("USER_CREATED");
 
     outboxPort.save(event);
 
@@ -124,7 +134,12 @@ public class UserService implements UserUseCase {
     User updatedUser = userPort.save(existing);
 
     UserUpdatedEvent event =
-        new UserUpdatedEvent(updatedUser.getId(), updatedUser.getEmail(), updatedUser.getName());
+        new UserUpdatedEvent()
+            .withAggregateId(updatedUser.getId())
+            .withEmail(updatedUser.getEmail())
+            .withName(updatedUser.getName())
+            .withOccurredAt(Instant.now())
+            .withEventType("USER_UPDATED");
 
     outboxPort.save(event);
 
@@ -150,7 +165,12 @@ public class UserService implements UserUseCase {
     User updatedUser = userPort.save(existing);
 
     UserUpdatedEvent event =
-        new UserUpdatedEvent(updatedUser.getId(), updatedUser.getEmail(), updatedUser.getName());
+        new UserUpdatedEvent()
+            .withAggregateId(updatedUser.getId())
+            .withEmail(updatedUser.getEmail())
+            .withName(updatedUser.getName())
+            .withOccurredAt(Instant.now())
+            .withEventType("USER_UPDATED");
 
     outboxPort.save(event);
 
@@ -172,7 +192,11 @@ public class UserService implements UserUseCase {
 
     userPort.delete(id);
 
-    UserDeletedEvent event = new UserDeletedEvent(id);
+    UserDeletedEvent event =
+        new UserDeletedEvent()
+            .withAggregateId(id)
+            .withOccurredAt(Instant.now())
+            .withEventType("USER_DELETED");
 
     outboxPort.save(event);
 
