@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,11 +79,17 @@ class UserServiceTest {
 
       userService.createUser(user);
 
-      ArgumentCaptor<UserCreatedEvent> eventCaptor = ArgumentCaptor.forClass(UserCreatedEvent.class);
-      verify(outboxPort).save(eventCaptor.capture());
+      ArgumentCaptor<UserCreatedEvent> eventCaptor =
+          ArgumentCaptor.forClass(UserCreatedEvent.class);
+      verify(outboxPort)
+          .save(
+              eventCaptor.capture(),
+              eq(String.valueOf(savedUser.getId())),
+              eq("USER"),
+              eq("USER_CREATED"));
 
       UserCreatedEvent event = eventCaptor.getValue();
-      
+
       assertEquals(1L, event.getAggregateId());
       assertEquals("USER_CREATED", event.getEventType());
       assertNotNull(event.getOccurredAt());
@@ -104,7 +112,7 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("already exists"));
 
       verify(userRepositoryPort, never()).save(any(User.class));
-      verify(outboxPort, never()).save(any(UserCreatedEvent.class));
+      verify(outboxPort, never()).save(any(), anyString(), anyString(), anyString());
     }
   }
 
@@ -224,8 +232,10 @@ class UserServiceTest {
       verify(userRepositoryPort).save(userCaptor.capture());
       assertEquals("John Updated", userCaptor.getValue().getName());
 
-      ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
-      verify(outboxPort).save(eventCaptor.capture());
+      ArgumentCaptor<UserUpdatedEvent> eventCaptor =
+          ArgumentCaptor.forClass(UserUpdatedEvent.class);
+      verify(outboxPort)
+          .save(eventCaptor.capture(), eq("1"), eq("USER"), eq("USER_UPDATED"));
 
       UserUpdatedEvent capturedEvent = eventCaptor.getValue();
 
@@ -248,7 +258,7 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("1"));
 
       verify(userRepositoryPort, never()).save(any(User.class));
-      verify(outboxPort, never()).save(any(UserUpdatedEvent.class));
+      verify(outboxPort, never()).save(any(), anyString(), anyString(), anyString());
     }
   }
 
@@ -277,8 +287,10 @@ class UserServiceTest {
 
       userService.deleteUser(1L);
 
-      ArgumentCaptor<UserDeletedEvent> eventCaptor = ArgumentCaptor.forClass(UserDeletedEvent.class);
-      verify(outboxPort).save(eventCaptor.capture());
+      ArgumentCaptor<UserDeletedEvent> eventCaptor =
+          ArgumentCaptor.forClass(UserDeletedEvent.class);
+      verify(outboxPort)
+          .save(eventCaptor.capture(), eq("1"), eq("USER"), eq("USER_DELETED"));
 
       UserDeletedEvent event = eventCaptor.getValue();
       assertEquals(1L, event.getAggregateId());
@@ -296,7 +308,7 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("1"));
 
       verify(userRepositoryPort, never()).delete(any());
-      verify(outboxPort, never()).save(any(UserDeletedEvent.class));
+      verify(outboxPort, never()).save(any(), anyString(), anyString(), anyString());
     }
   }
 }
