@@ -1,7 +1,6 @@
 package io.github.joaosimsic.core.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,12 +10,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.joaosimsic.core.domain.User;
+import io.github.joaosimsic.core.exceptions.business.ConflictException;
+import io.github.joaosimsic.core.exceptions.business.UserNotFoundException;
+import io.github.joaosimsic.core.ports.output.OutboxPort;
+import io.github.joaosimsic.core.ports.output.UserPort;
 import io.github.joaosimsic.events.user.UserCreatedEvent;
 import io.github.joaosimsic.events.user.UserDeletedEvent;
 import io.github.joaosimsic.events.user.UserUpdatedEvent;
-import io.github.joaosimsic.core.exceptions.business.*;
-import io.github.joaosimsic.core.ports.output.OutboxPort;
-import io.github.joaosimsic.core.ports.output.UserPort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -77,19 +77,16 @@ class UserServiceTest {
 
       userService.createUser(user);
 
-      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
+      ArgumentCaptor<UserCreatedEvent> eventCaptor = ArgumentCaptor.forClass(UserCreatedEvent.class);
       verify(outboxPort).save(eventCaptor.capture());
 
-       DomainEvent capturedEvent = eventCaptor.getValue();
-       assertInstanceOf(UserCreatedEventWrapper.class, capturedEvent);
-
-       UserCreatedEventWrapper event = (UserCreatedEventWrapper) capturedEvent;
-       assertEquals(1L, event.aggregateId()); // Use aggregateId() from DomainEvent
-       assertEquals("USER_CREATED", event.eventType()); // Use eventType() from DomainEvent
-       assertNotNull(event.occurredAt()); // Use occurredAt() from DomainEvent
-       assertEquals(1, event.getUserCreatedEvent().getUserId()); // Access generated event directly
-       assertEquals("john@example.com", event.getUserCreatedEvent().getEmail());
-       assertEquals("John Doe", event.getUserCreatedEvent().getName());
+      UserCreatedEvent event = eventCaptor.getValue();
+      
+      assertEquals(1L, event.getAggregateId());
+      assertEquals("USER_CREATED", event.getEventType());
+      assertNotNull(event.getOccurredAt());
+      assertEquals("john@example.com", event.getEmail());
+      assertEquals("John Doe", event.getName());
     }
 
     @Test
@@ -107,7 +104,7 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("already exists"));
 
       verify(userRepositoryPort, never()).save(any(User.class));
-      verify(outboxPort, never()).save(any(DomainEvent.class));
+      verify(outboxPort, never()).save(any(UserCreatedEvent.class));
     }
   }
 
@@ -227,14 +224,15 @@ class UserServiceTest {
       verify(userRepositoryPort).save(userCaptor.capture());
       assertEquals("John Updated", userCaptor.getValue().getName());
 
-      ArgumentCaptor<UserCreatedEvent> eventCaptor = ArgumentCaptor.forClass(UserCreatedEvent.class);
+      ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
       verify(outboxPort).save(eventCaptor.capture());
 
-      UserCreatedEvent capturedEvent = eventCaptor.getValue();
+      UserUpdatedEvent capturedEvent = eventCaptor.getValue();
 
       assertNotNull(capturedEvent);
-      assertEquals(1L, capturedEvent.aggregateId());
-      assertNotNull(capturedEvent.occurredAt());
+      assertEquals(1L, capturedEvent.getAggregateId());
+      assertNotNull(capturedEvent.getOccurredAt());
+      assertEquals("USER_UPDATED", capturedEvent.getEventType());
     }
 
     @Test
@@ -250,7 +248,7 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("1"));
 
       verify(userRepositoryPort, never()).save(any(User.class));
-      verify(outboxPort, never()).save(any(DomainEvent.class));
+      verify(outboxPort, never()).save(any(UserUpdatedEvent.class));
     }
   }
 
@@ -279,17 +277,13 @@ class UserServiceTest {
 
       userService.deleteUser(1L);
 
-      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
+      ArgumentCaptor<UserDeletedEvent> eventCaptor = ArgumentCaptor.forClass(UserDeletedEvent.class);
       verify(outboxPort).save(eventCaptor.capture());
 
-       DomainEvent capturedEvent = eventCaptor.getValue();
-       assertInstanceOf(UserDeletedEventWrapper.class, capturedEvent);
-
-       UserDeletedEventWrapper event = (UserDeletedEventWrapper) capturedEvent;
-       assertEquals(1L, event.aggregateId());
-       assertEquals("USER_DELETED", event.eventType());
-       assertNotNull(event.occurredAt());
-       assertEquals(1, event.getUserDeletedEvent().getUserId());
+      UserDeletedEvent event = eventCaptor.getValue();
+      assertEquals(1L, event.getAggregateId());
+      assertEquals("USER_DELETED", event.getEventType());
+      assertNotNull(event.getOccurredAt());
     }
 
     @Test
@@ -302,7 +296,7 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("1"));
 
       verify(userRepositoryPort, never()).delete(any());
-      verify(outboxPort, never()).save(any(DomainEvent.class));
+      verify(outboxPort, never()).save(any(UserDeletedEvent.class));
     }
   }
 }
