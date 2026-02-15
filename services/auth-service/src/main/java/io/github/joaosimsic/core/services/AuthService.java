@@ -7,7 +7,7 @@ import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.core.ports.output.EventPublisherPort;
 import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
 import io.github.joaosimsic.events.auth.UserRegisteredEvent;
-import java.util.Date;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ public class AuthService implements AuthUseCase {
             .withExternalId(user.getId())
             .withEmail(email)
             .withName(name)
-            .withOccurredAt(new Date())
+            .withOccurredAt(Instant.now())
             .withEventType("USER_REGISTERED");
 
     eventPublisher.publishUserRegistered(event);
@@ -82,7 +82,7 @@ public class AuthService implements AuthUseCase {
             .withExternalId(user.getId())
             .withEmail(user.getEmail())
             .withName(user.getName())
-            .withOccurredAt(new Date())
+            .withOccurredAt(Instant.now())
             .withEventType("USER_REGISTERED");
 
     eventPublisher.publishUserRegistered(event);
@@ -107,7 +107,7 @@ public class AuthService implements AuthUseCase {
         new EmailUpdatedEvent()
             .withExternalId(userId)
             .withNewEmail(newEmail)
-            .withOccurredAt(new Date())
+            .withOccurredAt(Instant.now())
             .withEventType("USER_EMAIL_UPDATED");
 
     eventPublisher.publishUserEmailUpdated(event);
