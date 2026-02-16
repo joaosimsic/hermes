@@ -47,6 +47,13 @@ services:
     environment:
       SERVER_PORT: ${AUTH_SERVICE_PORT}
       SPRING_PROFILES_ACTIVE: ${AUTH_PROFILE}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${AUTH_DB_HOST}:${AUTH_DB_PORT}/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${APP_USER}
+      SPRING_DATASOURCE_PASSWORD: ${APP_PASSWORD}
+      SPRING_FLYWAY_USER: ${FLYWAY_USER}
+      SPRING_FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}
+      SPRING_DATA_REDIS_HOST: ${AUTH_CACHE_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
       SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
       SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
@@ -62,6 +69,32 @@ services:
     depends_on:
       - keycloak
       - rabbitmq
+      - auth-cache
+
+  auth-db:
+    image: postgres:16-alpine
+    container_name: ${AUTH_DB_HOST}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      FLYWAY_USER: ${FLYWAY_USER}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}
+      APP_USER: ${APP_USER}
+      APP_PASSWORD: ${APP_PASSWORD}
+    ports:
+      - "${AUTH_DB_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+      - ./infrastructure/scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+
+  auth-cache:
+    image: redis:7-alpine
+    container_name: ${AUTH_CACHE_HOST}
+    ports:
+      - "${AUTH_CACHE_PORT}:6379"
+    volumes:
+      - auth_cache_data:/data
 
   user-service:
     build:
@@ -74,7 +107,7 @@ services:
       SERVER_PORT: ${USER_SERVICE_PORT}
       APP_JWT_SECRET: ${GATEWAY_SECRET}
       SPRING_PROFILES_ACTIVE: ${USER_PROFILE}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${USER_DB_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${USER_DB_HOST}:${USER_DB_PORT}/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${APP_USER}
       SPRING_DATASOURCE_PASSWORD: ${APP_PASSWORD}
       SPRING_FLYWAY_USER: ${FLYWAY_USER}
@@ -104,7 +137,7 @@ services:
       APP_USER: ${APP_USER}
       APP_PASSWORD: ${APP_PASSWORD}
     ports:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+      - "${USER_DB_PORT}:${POSTGRES_PORT}"
     volumes:
       - user_db_data:/var/lib/postgresql/data
       - ./infrastructure/scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
@@ -145,6 +178,8 @@ services:
 
 volumes:
   gateway_cache_data:
+  auth_db_data:
+  auth_cache_data:
   user_db_data:
   user_cache_data:
   rabbitmq_data:
