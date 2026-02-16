@@ -29,6 +29,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 
 @ExtendWith(MockitoExtension.class)
 class KeycloakAdapterTest {
@@ -37,6 +38,8 @@ class KeycloakAdapterTest {
   @Mock private RealmResource realmResource;
   @Mock private UsersResource usersResource;
   @Mock private UserResource userResource;
+
+  @Mock private CacheManager cacheManager;
 
   private KeycloakProperties keycloakProperties;
   private KeycloakAdapter keycloakAdapter;
@@ -48,7 +51,7 @@ class KeycloakAdapterTest {
     keycloakProperties.setRealm("test-realm");
     keycloakProperties.setClientId("test-client");
 
-    keycloakAdapter = new KeycloakAdapter(keycloakAdminClient, keycloakProperties);
+    keycloakAdapter = new KeycloakAdapter(keycloakAdminClient, keycloakProperties, cacheManager);
   }
 
   @Nested
@@ -193,5 +196,4 @@ class KeycloakAdapterTest {
       assertEquals(newEmail, updatedUser.getUsername());
     }
   }
-
 }
