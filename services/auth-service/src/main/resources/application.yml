@@ -22,12 +22,30 @@ spring:
 
   cache:
     type: redis
+    cache-names: authUsers
+    redis:
+      time-to-live: 1800000 
+      cache-null-values: false
 
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST}
     port: ${SPRING_RABBITMQ_PORT}
     username: ${SPRING_RABBITMQ_USERNAME}
     password: ${SPRING_RABBITMQ_PASSWORD}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      authProvider:
+        register-health-indicator: true
+        event-consumer-buffer-size: 10
+        sliding-window-size: 10
+        sliding-window-type: COUNT_BASED
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s 
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
 
 app:
   outbox:
