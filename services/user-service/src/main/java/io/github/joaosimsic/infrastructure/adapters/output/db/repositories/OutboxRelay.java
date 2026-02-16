@@ -2,13 +2,11 @@ package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.OutboxEntry;
-
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.events.user.UserCreatedEvent;
 import io.github.joaosimsic.events.user.UserDeletedEvent;
 import io.github.joaosimsic.events.user.UserUpdatedEvent;
-
 import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -45,7 +43,7 @@ public class OutboxRelay {
       }
 
       try {
-        Object event = deserializeEvent(entry); // Cast to Object
+        Object event = deserializeEvent(entry);
 
         switch (entry.eventType()) {
           case "USER_CREATED" -> messagePublisher.publish((UserCreatedEvent) event);
