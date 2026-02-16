@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "outbox")
@@ -26,7 +28,8 @@ public class OutboxEntity {
   @Column(name = "event_type", nullable = false)
   private String eventType;
 
-  @Column(columnDefinition = "TEXT", nullable = false)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "payload", nullable = false)
   private String payload;
 
   @Enumerated(EnumType.STRING)
