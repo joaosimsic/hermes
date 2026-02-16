@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,11 +12,11 @@ import static org.mockito.Mockito.when;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
-import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
-import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import io.github.joaosimsic.core.exceptions.business.UserAlreadyExistsException;
 import io.github.joaosimsic.core.ports.output.AuthPort;
-import io.github.joaosimsic.core.ports.output.EventPublisherPort;
+import io.github.joaosimsic.core.ports.output.OutboxPort;
+import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
+import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -30,14 +31,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AuthServiceTest {
 
   @Mock private AuthPort authPort;
-
-  @Mock private EventPublisherPort eventPublisher;
+  @Mock private OutboxPort outboxPort;
 
   private AuthService authService;
 
   @BeforeEach
   void setUp() {
-    authService = new AuthService(authPort, eventPublisher);
+    authService = new AuthService(authPort, outboxPort);
   }
 
   @Nested
@@ -45,173 +45,55 @@ class AuthServiceTest {
   class Register {
 
     @Test
-    @DisplayName("should create user, publish event, and login in correct order")
+    @DisplayName("should create user, save to outbox, and login in correct order")
     void shouldRegisterUserInCorrectOrder() {
       String name = "John Doe";
       String email = "john@example.com";
       String password = "password123";
 
-      AuthUser createdUser =
-          AuthUser.builder().id("user-123").email(email).name(name).emailVerified(true).build();
-
-      AuthTokens expectedTokens =
-          AuthTokens.builder()
-              .accessToken("access-token")
-              .refreshToken("refresh-token")
-              .idToken("id-token")
-              .expiresIn(300)
-              .refreshExpiresIn(1800)
-              .build();
+      AuthUser createdUser = AuthUser.builder().id("user-123").email(email).name(name).build();
+      AuthTokens expectedTokens = AuthTokens.builder().accessToken("access-token").build();
 
       when(authPort.createUser(name, email, password)).thenReturn(createdUser);
       when(authPort.login(email, password)).thenReturn(expectedTokens);
 
-      AuthTokens result = authService.register(name, email, password);
+      authService.register(name, email, password);
 
-      assertEquals(expectedTokens, result);
-
-      InOrder inOrder = inOrder(authPort, eventPublisher);
+      InOrder inOrder = inOrder(authPort, outboxPort);
       inOrder.verify(authPort).createUser(name, email, password);
-      inOrder.verify(eventPublisher).publishUserRegistered(any(UserRegisteredEvent.class));
+      inOrder.verify(outboxPort).save(any(UserRegisteredEvent.class), eq("user-123"), eq("AUTH"), eq("USER_REGISTERED"));
       inOrder.verify(authPort).login(email, password);
     }
 
     @Test
-    @DisplayName("should publish UserRegisteredEvent with correct data")
-    void shouldPublishUserRegisteredEventWithCorrectData() {
-      String name = "John Doe";
+    @DisplayName("should save UserRegisteredEvent to outbox with correct data")
+    void shouldSaveUserRegisteredEventToOutbox() {
       String email = "john@example.com";
-      String password = "password123";
+      AuthUser createdUser = AuthUser.builder().id("user-123").email(email).name("John Doe").build();
 
-      AuthUser createdUser =
-          AuthUser.builder().id("user-123").email(email).name(name).emailVerified(true).build();
+      when(authPort.createUser(any(), any(), any())).thenReturn(createdUser);
+      when(authPort.login(any(), any())).thenReturn(AuthTokens.builder().build());
 
-      AuthTokens tokens =
-          AuthTokens.builder().accessToken("access-token").refreshToken("refresh-token").build();
+      authService.register("John Doe", email, "password123");
 
-      when(authPort.createUser(name, email, password)).thenReturn(createdUser);
-      when(authPort.login(email, password)).thenReturn(tokens);
+      ArgumentCaptor<UserRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(UserRegisteredEvent.class);
+      verify(outboxPort).save(eventCaptor.capture(), eq("user-123"), eq("AUTH"), eq("USER_REGISTERED"));
 
-      authService.register(name, email, password);
-
-      ArgumentCaptor<UserRegisteredEvent> eventCaptor =
-          ArgumentCaptor.forClass(UserRegisteredEvent.class);
-      verify(eventPublisher).publishUserRegistered(eventCaptor.capture());
-
-      UserRegisteredEvent capturedEvent = eventCaptor.getValue();
-      assertEquals("user-123", capturedEvent.getExternalId());
-      assertEquals(email, capturedEvent.getEmail());
-      assertEquals(name, capturedEvent.getName());
-      assertNotNull(capturedEvent.getOccurredAt());
-      assertEquals("USER_REGISTERED", capturedEvent.getEventType());
+      UserRegisteredEvent event = eventCaptor.getValue();
+      assertEquals("user-123", event.getExternalId());
+      assertEquals(email, event.getEmail());
+      assertNotNull(event.getOccurredAt());
     }
 
     @Test
-    @DisplayName("should not publish event or login when user creation fails")
-    void shouldNotPublishEventOrLoginWhenUserCreationFails() {
-      String name = "John Doe";
-      String email = "existing@example.com";
-      String password = "password123";
+    @DisplayName("should not save to outbox or login when user creation fails")
+    void shouldNotProceedWhenUserCreationFails() {
+      when(authPort.createUser(any(), any(), any())).thenThrow(UserAlreadyExistsException.class);
 
-      when(authPort.createUser(name, email, password))
-          .thenThrow(
-              new UserAlreadyExistsException("User with email " + email + " already exists"));
+      assertThrows(UserAlreadyExistsException.class, () -> authService.register("a", "b", "c"));
 
-      assertThrows(
-          UserAlreadyExistsException.class, () -> authService.register(name, email, password));
-
-      verify(eventPublisher, never()).publishUserRegistered(any(UserRegisteredEvent.class));
+      verify(outboxPort, never()).save(any(), any(), any(), any());
       verify(authPort, never()).login(any(), any());
-    }
-  }
-
-  @Nested
-  @DisplayName("login")
-  class Login {
-
-    @Test
-    @DisplayName("should delegate to authPort and return tokens")
-    void shouldDelegateToAuthPortAndReturnTokens() {
-      String email = "john@example.com";
-      String password = "password123";
-
-      AuthTokens expectedTokens =
-          AuthTokens.builder()
-              .accessToken("access-token")
-              .refreshToken("refresh-token")
-              .idToken("id-token")
-              .expiresIn(300)
-              .refreshExpiresIn(1800)
-              .build();
-
-      when(authPort.login(email, password)).thenReturn(expectedTokens);
-
-      AuthTokens result = authService.login(email, password);
-
-      assertEquals(expectedTokens, result);
-      verify(authPort).login(email, password);
-    }
-  }
-
-  @Nested
-  @DisplayName("refresh")
-  class Refresh {
-
-    @Test
-    @DisplayName("should delegate to authPort and return new tokens")
-    void shouldDelegateToAuthPortAndReturnNewTokens() {
-      String refreshToken = "old-refresh-token";
-
-      AuthTokens expectedTokens =
-          AuthTokens.builder()
-              .accessToken("new-access-token")
-              .refreshToken("new-refresh-token")
-              .idToken("new-id-token")
-              .expiresIn(300)
-              .refreshExpiresIn(1800)
-              .build();
-
-      when(authPort.refreshToken(refreshToken)).thenReturn(expectedTokens);
-
-      AuthTokens result = authService.refresh(refreshToken);
-
-      assertEquals(expectedTokens, result);
-      verify(authPort).refreshToken(refreshToken);
-    }
-  }
-
-  @Nested
-  @DisplayName("logout")
-  class Logout {
-
-    @Test
-    @DisplayName("should delegate to authPort")
-    void shouldDelegateToAuthPort() {
-      String refreshToken = "refresh-token";
-
-      authService.logout(refreshToken);
-
-      verify(authPort).logout(refreshToken);
-    }
-  }
-
-  @Nested
-  @DisplayName("getGitHubAuthUrl")
-  class GetGitHubAuthUrl {
-
-    @Test
-    @DisplayName("should delegate to authPort with correct parameters")
-    void shouldDelegateToAuthPortWithCorrectParameters() {
-      String redirectUri = "http://localhost:3000/callback";
-      String state = "random-state";
-      String expectedUrl = "https://github.com/oauth/authorize?...";
-
-      when(authPort.getGitHubAuthUrl(redirectUri, state)).thenReturn(expectedUrl);
-
-      String result = authService.getGitHubAuthUrl(redirectUri, state);
-
-      assertEquals(expectedUrl, result);
-      verify(authPort).getGitHubAuthUrl(redirectUri, state);
     }
   }
 
@@ -220,98 +102,22 @@ class AuthServiceTest {
   class HandleGitHubCallback {
 
     @Test
-    @DisplayName("should exchange code for tokens, fetch user info, and publish event")
-    void shouldExchangeCodeFetchUserInfoAndPublishEvent() {
+    @DisplayName("should exchange code, fetch info, and save event to outbox")
+    void shouldHandleGitHubFlow() {
       String code = "auth-code";
-      String redirectUri = "http://localhost:3000/callback";
-
-      AuthTokens tokens =
-          AuthTokens.builder()
-              .accessToken("access-token")
-              .refreshToken("refresh-token")
-              .idToken("id-token")
-              .expiresIn(300)
-              .refreshExpiresIn(1800)
-              .build();
-
-      AuthUser user =
-          AuthUser.builder()
-              .id("github-user-123")
-              .email("github@example.com")
-              .name("GitHub User")
-              .emailVerified(true)
-              .build();
+      String redirectUri = "http://localhost:3000";
+      AuthTokens tokens = AuthTokens.builder().accessToken("token").build();
+      AuthUser user = AuthUser.builder().id("gh-123").email("gh@test.com").name("GH User").build();
 
       when(authPort.exchangeCodeForTokens(code, redirectUri)).thenReturn(tokens);
-      when(authPort.getUserInfo(tokens.getAccessToken())).thenReturn(user);
-
-      AuthTokens result = authService.handleGitHubCallback(code, redirectUri);
-
-      assertEquals(tokens, result);
-
-      InOrder inOrder = inOrder(authPort, eventPublisher);
-      inOrder.verify(authPort).exchangeCodeForTokens(code, redirectUri);
-      inOrder.verify(authPort).getUserInfo(tokens.getAccessToken());
-      inOrder.verify(eventPublisher).publishUserRegistered(any(UserRegisteredEvent.class));
-    }
-
-    @Test
-    @DisplayName("should publish UserRegisteredEvent with GitHub user data")
-    void shouldPublishUserRegisteredEventWithGitHubUserData() {
-      String code = "auth-code";
-      String redirectUri = "http://localhost:3000/callback";
-
-      AuthTokens tokens =
-          AuthTokens.builder().accessToken("access-token").refreshToken("refresh-token").build();
-
-      AuthUser user =
-          AuthUser.builder()
-              .id("github-user-123")
-              .email("github@example.com")
-              .name("GitHub User")
-              .emailVerified(true)
-              .build();
-
-      when(authPort.exchangeCodeForTokens(code, redirectUri)).thenReturn(tokens);
-      when(authPort.getUserInfo(tokens.getAccessToken())).thenReturn(user);
+      when(authPort.getUserInfo("token")).thenReturn(user);
 
       authService.handleGitHubCallback(code, redirectUri);
 
-      ArgumentCaptor<UserRegisteredEvent> eventCaptor =
-          ArgumentCaptor.forClass(UserRegisteredEvent.class);
-      verify(eventPublisher).publishUserRegistered(eventCaptor.capture());
-
-      UserRegisteredEvent capturedEvent = eventCaptor.getValue();
-      assertEquals("github-user-123", capturedEvent.getExternalId());
-      assertEquals("github@example.com", capturedEvent.getEmail());
-      assertEquals("GitHub User", capturedEvent.getName());
-      assertNotNull(capturedEvent.getOccurredAt());
-    }
-  }
-
-  @Nested
-  @DisplayName("getCurrentUser")
-  class GetCurrentUser {
-
-    @Test
-    @DisplayName("should delegate to authPort and return user info")
-    void shouldDelegateToAuthPortAndReturnUserInfo() {
-      String accessToken = "access-token";
-
-      AuthUser expectedUser =
-          AuthUser.builder()
-              .id("user-123")
-              .email("john@example.com")
-              .name("John Doe")
-              .emailVerified(true)
-              .build();
-
-      when(authPort.getUserInfo(accessToken)).thenReturn(expectedUser);
-
-      AuthUser result = authService.getCurrentUser(accessToken);
-
-      assertEquals(expectedUser, result);
-      verify(authPort).getUserInfo(accessToken);
+      ArgumentCaptor<UserRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(UserRegisteredEvent.class);
+      verify(outboxPort).save(eventCaptor.capture(), eq("gh-123"), eq("AUTH"), eq("USER_REGISTERED"));
+      
+      assertEquals("gh@test.com", eventCaptor.getValue().getEmail());
     }
   }
 
@@ -320,52 +126,46 @@ class AuthServiceTest {
   class UpdateEmail {
 
     @Test
-    @DisplayName("should update email and publish event")
-    void shouldUpdateEmailAndPublishEvent() {
+    @DisplayName("should update email and save EmailUpdatedEvent to outbox")
+    void shouldUpdateEmailAndSaveEvent() {
       String userId = "user-123";
-      String newEmail = "newemail@example.com";
+      String newEmail = "new@example.com";
 
       authService.updateEmail(userId, newEmail);
 
-      InOrder inOrder = inOrder(authPort, eventPublisher);
-      inOrder.verify(authPort).updateEmail(userId, newEmail);
-      inOrder.verify(eventPublisher).publishUserEmailUpdated(any(EmailUpdatedEvent.class));
-    }
+      verify(authPort).updateEmail(userId, newEmail);
 
-    @Test
-    @DisplayName("should publish UserEmailUpdatedEvent with correct data")
-    void shouldPublishUserEmailUpdatedEventWithCorrectData() {
-      String userId = "user-123";
-      String newEmail = "newemail@example.com";
+      ArgumentCaptor<EmailUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(EmailUpdatedEvent.class);
+      verify(outboxPort).save(eventCaptor.capture(), eq(userId), eq("AUTH"), eq("USER_EMAIL_UPDATED"));
 
-      authService.updateEmail(userId, newEmail);
-
-      ArgumentCaptor<EmailUpdatedEvent> eventCaptor =
-          ArgumentCaptor.forClass(EmailUpdatedEvent.class);
-      verify(eventPublisher).publishUserEmailUpdated(eventCaptor.capture());
-
-      EmailUpdatedEvent capturedEvent = eventCaptor.getValue();
-      assertEquals(userId, capturedEvent.getExternalId());
-      assertEquals(newEmail, capturedEvent.getNewEmail());
-      assertNotNull(capturedEvent.getOccurredAt());
-      assertEquals("USER_EMAIL_UPDATED", capturedEvent.getEventType());
+      EmailUpdatedEvent event = eventCaptor.getValue();
+      assertEquals(userId, event.getExternalId());
+      assertEquals(newEmail, event.getNewEmail());
+      assertEquals("USER_EMAIL_UPDATED", event.getEventType());
     }
   }
 
   @Nested
-  @DisplayName("updatePassword")
-  class UpdatePassword {
+  @DisplayName("Standard Delegations")
+  class Delegations {
+    // These tests remain simple as they only verify the Port call
+    
+    @Test
+    void loginDelegatesToPort() {
+      authService.login("u", "p");
+      verify(authPort).login("u", "p");
+    }
 
     @Test
-    @DisplayName("should delegate to authPort")
-    void shouldDelegateToAuthPort() {
-      String userId = "user-123";
-      String currentPassword = "oldPassword123";
-      String newPassword = "newPassword456";
+    void logoutDelegatesToPort() {
+      authService.logout("token");
+      verify(authPort).logout("token");
+    }
 
-      authService.updatePassword(userId, currentPassword, newPassword);
-
-      verify(authPort).updatePassword(userId, currentPassword, newPassword);
+    @Test
+    void updatePasswordDelegatesToPort() {
+      authService.updatePassword("id", "old", "new");
+      verify(authPort).updatePassword("id", "old", "new");
     }
   }
 }

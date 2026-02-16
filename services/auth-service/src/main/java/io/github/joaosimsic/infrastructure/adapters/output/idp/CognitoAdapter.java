@@ -6,14 +6,22 @@ import io.github.joaosimsic.core.exceptions.business.AuthenticationException;
 import io.github.joaosimsic.core.exceptions.business.UserAlreadyExistsException;
 import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.infrastructure.config.properties.CognitoProperties;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.context.annotation.Profile;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -31,6 +39,7 @@ public class CognitoAdapter implements AuthPort {
 
   private final CognitoIdentityProviderClient cognitoClient;
   private final CognitoProperties cognitoProperties;
+  private final CacheManager cacheManager;
   private final WebClient webClient = WebClient.builder().build();
 
   @Override
@@ -45,7 +54,7 @@ public class CognitoAdapter implements AuthPort {
                   AttributeType.builder().name("name").value(name).build(),
                   AttributeType.builder().name("email_verified").value("true").build())
               .temporaryPassword(password)
-              .messageAction(MessageActionType.SUPPRESS) 
+              .messageAction(MessageActionType.SUPPRESS)
               .build();
 
       AdminCreateUserResponse response = cognitoClient.adminCreateUser(userRequest);
@@ -84,10 +93,7 @@ public class CognitoAdapter implements AuthPort {
               .userPoolId(cognitoProperties.getUserPoolId())
               .clientId(cognitoProperties.getClientId())
               .authFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)
-              .authParameters(
-                  Map.of(
-                      "USERNAME", email,
-                      "PASSWORD", password))
+              .authParameters(Map.of("USERNAME", email, "PASSWORD", password))
               .build();
 
       AdminInitiateAuthResponse response = cognitoClient.adminInitiateAuth(authRequest);
@@ -130,6 +136,12 @@ public class CognitoAdapter implements AuthPort {
   }
 
   @Override
+  @CircuitBreaker(name = "authProvider")
+  @Retryable(
+      retryFor = {CognitoIdentityProviderException.class},
+      maxAttemptsExpression = "${app.idp.retry.max-attempts:3}",
+      backoff = @Backoff(delayExpression = "${app.idp.retry.initial-backoff-ms:1000}"))
+  @Cacheable(value = "authUsers", key = "#accessToken", unless = "#result == null")
   public AuthUser getUserInfo(String accessToken) {
     try {
       GetUserRequest getUserRequest = GetUserRequest.builder().accessToken(accessToken).build();
@@ -146,18 +158,15 @@ public class CognitoAdapter implements AuthPort {
           .emailVerified("true".equals(attributes.get("email_verified")))
           .build();
     } catch (CognitoIdentityProviderException e) {
-      throw new AuthenticationException("Failed to get user info");
+      log.error("Cognito communication failed: {}", e.getMessage());
+      throw e;
     }
   }
 
-  private AuthTokens mapToAuthTokens(AuthenticationResultType result) {
-    return AuthTokens.builder()
-        .accessToken(result.accessToken())
-        .refreshToken(result.refreshToken())
-        .idToken(result.idToken())
-        .expiresIn(result.expiresIn())
-        .refreshExpiresIn(0)
-        .build();
+  @Recover
+  public AuthUser recoverUserInfo(Exception e, String accessToken) {
+    log.warn("IdP Failure. Falling back to cache for token. Error: {}", e.getMessage());
+    return getFromCache("authUsers", accessToken, AuthUser.class);
   }
 
   @Override
@@ -203,6 +212,7 @@ public class CognitoAdapter implements AuthPort {
   }
 
   @Override
+  @CacheEvict(value = "authUsers", allEntries = true)
   public void updateEmail(String userId, String newEmail) {
     log.info("Updating email for user {} in Cognito", userId);
 
@@ -226,6 +236,7 @@ public class CognitoAdapter implements AuthPort {
   }
 
   @Override
+  @CacheEvict(value = "authUsers", allEntries = true)
   public void updatePassword(String userId, String currentPassword, String newPassword) {
     log.info("Updating password for user {} in Cognito", userId);
 
@@ -276,5 +287,24 @@ public class CognitoAdapter implements AuthPort {
     } catch (CognitoIdentityProviderException e) {
       throw new AuthenticationException("Failed to verify current password");
     }
+  }
+
+  private <T> T getFromCache(String cacheName, Object key, Class<T> type) {
+    Cache cache = cacheManager.getCache(cacheName);
+    if (cache == null) {
+      log.warn("No cache found for {}, returning null", cacheName);
+      return null;
+    }
+    return cache.get(key, type);
+  }
+
+  private AuthTokens mapToAuthTokens(AuthenticationResultType result) {
+    return AuthTokens.builder()
+        .accessToken(result.accessToken())
+        .refreshToken(result.refreshToken())
+        .idToken(result.idToken())
+        .expiresIn(result.expiresIn())
+        .refreshExpiresIn(0)
+        .build();
   }
 }

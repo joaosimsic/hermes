@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
@@ -42,6 +43,8 @@ class CognitoAdapterTest {
 
   @Mock private CognitoIdentityProviderClient cognitoClient;
 
+  @Mock private CacheManager cacheManager;
+
   private CognitoProperties cognitoProperties;
 
   private CognitoAdapter cognitoAdapter;
@@ -55,7 +58,7 @@ class CognitoAdapterTest {
     cognitoProperties.setDomainUrl("https://test.auth.us-east-1.amazoncognito.com");
     cognitoProperties.setRegion("us-east-1");
 
-    cognitoAdapter = new CognitoAdapter(cognitoClient, cognitoProperties);
+    cognitoAdapter = new CognitoAdapter(cognitoClient, cognitoProperties, cacheManager);
   }
 
   @Nested
@@ -123,11 +126,9 @@ class CognitoAdapterTest {
 
       List<AttributeType> attributes = capturedRequest.userAttributes();
       assertTrue(
-          attributes.stream()
-              .anyMatch(a -> a.name().equals("email") && a.value().equals(email)));
+          attributes.stream().anyMatch(a -> a.name().equals("email") && a.value().equals(email)));
       assertTrue(
-          attributes.stream()
-              .anyMatch(a -> a.name().equals("name") && a.value().equals(name)));
+          attributes.stream().anyMatch(a -> a.name().equals("name") && a.value().equals(name)));
       assertTrue(
           attributes.stream()
               .anyMatch(a -> a.name().equals("email_verified") && a.value().equals("true")));

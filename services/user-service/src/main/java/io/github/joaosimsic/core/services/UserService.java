@@ -35,7 +35,7 @@ public class UserService implements UserUseCase {
 
     User savedUser = userPort.save(user);
 
-    UserCreatedEvent event =
+    var event =
         new UserCreatedEvent()
             .withAggregateId(savedUser.getId())
             .withEmail(savedUser.getEmail())
@@ -43,7 +43,7 @@ public class UserService implements UserUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_CREATED");
 
-    outboxPort.save(event);
+    outboxPort.save(event, String.valueOf(savedUser.getId()), "USER", event.getEventType());
 
     return savedUser;
   }
@@ -92,17 +92,11 @@ public class UserService implements UserUseCase {
       return existingUser;
     }
 
-    User newUser =
-        User.builder()
-            .externalId(externalId)
-            .email(email)
-            // !change name logic
-            .name(name != null ? name : email)
-            .build();
+    var newUser = User.builder().externalId(externalId).email(email).name(name).build();
 
     User savedUser = userPort.save(newUser);
 
-    UserCreatedEvent event =
+    var event =
         new UserCreatedEvent()
             .withAggregateId(savedUser.getId())
             .withEmail(savedUser.getEmail())
@@ -110,7 +104,7 @@ public class UserService implements UserUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_CREATED");
 
-    outboxPort.save(event);
+    outboxPort.save(event, String.valueOf(savedUser.getId()), "USER", event.getEventType());
 
     log.info("Created new user via sync with externalId: {}", externalId);
 
@@ -133,7 +127,7 @@ public class UserService implements UserUseCase {
 
     User updatedUser = userPort.save(existing);
 
-    UserUpdatedEvent event =
+    var event =
         new UserUpdatedEvent()
             .withAggregateId(updatedUser.getId())
             .withEmail(updatedUser.getEmail())
@@ -141,7 +135,7 @@ public class UserService implements UserUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_UPDATED");
 
-    outboxPort.save(event);
+    outboxPort.save(event, String.valueOf(updatedUser.getId()), "USER", event.getEventType());
 
     log.info("Updated user with id: {}", updatedUser.getId());
 
@@ -164,7 +158,7 @@ public class UserService implements UserUseCase {
 
     User updatedUser = userPort.save(existing);
 
-    UserUpdatedEvent event =
+    var event =
         new UserUpdatedEvent()
             .withAggregateId(updatedUser.getId())
             .withEmail(updatedUser.getEmail())
@@ -172,7 +166,7 @@ public class UserService implements UserUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_UPDATED");
 
-    outboxPort.save(event);
+    outboxPort.save(event, String.valueOf(updatedUser.getId()), "USER", event.getEventType());
 
     log.info("Updated name for user with id: {}", updatedUser.getId());
 
@@ -192,13 +186,13 @@ public class UserService implements UserUseCase {
 
     userPort.delete(id);
 
-    UserDeletedEvent event =
+    var event =
         new UserDeletedEvent()
             .withAggregateId(id)
             .withOccurredAt(Instant.now())
             .withEventType("USER_DELETED");
 
-    outboxPort.save(event);
+    outboxPort.save(event, String.valueOf(id), "USER", event.getEventType());
 
     log.info("Deleted user with id: {}", id);
   }

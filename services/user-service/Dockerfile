@@ -4,6 +4,9 @@ WORKDIR /app
 COPY bom/pom.xml bom/
 RUN mvn install -f bom/pom.xml -q
 
+COPY events/ events/
+RUN mvn install -f events/pom.xml -q
+
 COPY services/user-service/pom.xml services/user-service/
 RUN mvn dependency:go-offline -f services/user-service/pom.xml -q
 
@@ -14,9 +17,12 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -D appuser
+
 COPY --from=builder /app/services/user-service/target/*.jar app.jar
+
 RUN mkdir -p /app/logs && chown appuser:appgroup /app/logs
 
 USER appuser
 EXPOSE 8081
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

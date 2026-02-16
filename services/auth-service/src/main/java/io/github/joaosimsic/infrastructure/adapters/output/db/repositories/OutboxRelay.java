@@ -2,11 +2,10 @@ package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.OutboxEntry;
-import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
+import io.github.joaosimsic.core.ports.output.EventPublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
-import io.github.joaosimsic.events.user.UserCreatedEvent;
-import io.github.joaosimsic.events.user.UserDeletedEvent;
-import io.github.joaosimsic.events.user.UserUpdatedEvent;
+import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
+import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -21,8 +20,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class OutboxRelay {
+
   private final OutboxPort outboxPort;
-  private final MessagePublisherPort messagePublisher;
+  private final EventPublisherPort messagePublisher;
   private final ObjectMapper objectMapper;
   private final OutboxProperties outboxProperties;
 
@@ -36,7 +36,6 @@ public class OutboxRelay {
     List<UUID> processedIds = new ArrayList<>();
 
     for (OutboxEntry entry : entries) {
-
       if (entry.attempts() >= outboxProperties.getMaxAttempts()) {
         outboxPort.markAsFailed(entry.id(), "Max attempts reached");
         continue;
@@ -46,9 +45,10 @@ public class OutboxRelay {
         Object event = deserializeEvent(entry);
 
         switch (entry.eventType()) {
-          case "USER_CREATED" -> messagePublisher.publish((UserCreatedEvent) event);
-          case "USER_UPDATED" -> messagePublisher.publish((UserUpdatedEvent) event);
-          case "USER_DELETED" -> messagePublisher.publish((UserDeletedEvent) event);
+          case "USER_REGISTERED" ->
+              messagePublisher.publishUserRegistered((UserRegisteredEvent) event);
+          case "USER_EMAIL_UPDATED" ->
+              messagePublisher.publishUserEmailUpdated((EmailUpdatedEvent) event);
           default -> throw new IllegalArgumentException("Unknown event type: " + entry.eventType());
         }
 
@@ -67,9 +67,8 @@ public class OutboxRelay {
 
   private Object deserializeEvent(OutboxEntry entry) throws Exception {
     return switch (entry.eventType()) {
-      case "USER_CREATED" -> objectMapper.readValue(entry.payload(), UserCreatedEvent.class);
-      case "USER_UPDATED" -> objectMapper.readValue(entry.payload(), UserUpdatedEvent.class);
-      case "USER_DELETED" -> objectMapper.readValue(entry.payload(), UserDeletedEvent.class);
+      case "USER_REGISTERED" -> objectMapper.readValue(entry.payload(), UserRegisteredEvent.class);
+      case "USER_EMAIL_UPDATED" -> objectMapper.readValue(entry.payload(), EmailUpdatedEvent.class);
       default -> throw new IllegalArgumentException("Unknown event type: " + entry.eventType());
     };
   }
