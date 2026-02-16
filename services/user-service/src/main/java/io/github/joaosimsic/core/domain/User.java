@@ -1,0 +1,23 @@
+package io.github.joaosimsic.core.domain;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class User {
+  private Long id;
+  private String externalId;
+  private String name;
+  private String email;
+
+  public void updateName(String newName) {
+    if (newName != null && !newName.isBlank()) {
+      this.name = newName;
+    }
+  }
+}

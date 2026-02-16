@@ -1,0 +1,14 @@
+spring:
+  cloud:
+    aws:
+      region:
+        static: ${SPRING_CLOUD_AWS_REGION_STATIC}
+      credentials:
+        access-key: ${SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
+        secret-key: ${SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY}
+
+  rabbitmq:
+    listener:
+      type: simple
+      simple:
+        auto-startup: false

@@ -1,0 +1,77 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "User Service API",
+    "description": "Handles local user profile persistence and sync from Auth events.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/users/sync": {
+      "post": {
+        "summary": "Sync user from IDP",
+        "description": "Internal endpoint used to manually sync or repair user data from Keycloak/Cognito.",
+        "tags": ["Synchronization"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserSyncRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User synchronized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserSyncRequest": {
+        "type": "object",
+        "required": ["externalId", "email"],
+        "properties": {
+          "externalId": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "name": { "type": "string" }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": { "type": "string" }
+        }
+      }
+    }
+  }
+}

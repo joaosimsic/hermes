@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.io/joaosimsic/schemas/events/user-created.v1.schema.json",
+  "title": "UserCreatedEvent",
+  "type": "object",
+  "properties": {
+    "aggregateId": {
+      "type": "integer",
+      "format": "int64"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "name": {
+      "type": "string"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "eventType": {
+      "type": "string",
+      "default": "USER_CREATED"
+    }
+  },
+  "required": ["aggregateId", "email", "name", "occurredAt", "eventType"],
+  "additionalProperties": false
+}
