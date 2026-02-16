@@ -51,6 +51,7 @@ app:
   outbox:
     poll-interval: 5000
     batch-size: 20
+    max-attempts: 5
 
 keycloak:
   server-url: ${KEYCLOAK_SERVER_URL}
