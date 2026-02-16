@@ -4,7 +4,7 @@ import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
 import io.github.joaosimsic.core.ports.output.AuthPort;
-import io.github.joaosimsic.core.ports.output.EventPublisherPort;
+import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
 import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import java.time.Instant;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class AuthService implements AuthUseCase {
 
   private final AuthPort authPort;
-  private final EventPublisherPort eventPublisher;
+  private final OutboxPort outboxPort;
 
   @Override
   public AuthTokens register(String name, String email, String password) {
@@ -34,7 +34,7 @@ public class AuthService implements AuthUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_REGISTERED");
 
-    eventPublisher.publishUserRegistered(event);
+    outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
     log.info("User registered successfully, logging in: {}", email);
 
@@ -85,7 +85,7 @@ public class AuthService implements AuthUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_REGISTERED");
 
-    eventPublisher.publishUserRegistered(event);
+    outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
     return tokens;
   }
@@ -110,7 +110,7 @@ public class AuthService implements AuthUseCase {
             .withOccurredAt(Instant.now())
             .withEventType("USER_EMAIL_UPDATED");
 
-    eventPublisher.publishUserEmailUpdated(event);
+    outboxPort.save(event, String.valueOf(userId), "AUTH", event.getEventType());
 
     log.info("Email updated successfully for user: {}", userId);
   }
