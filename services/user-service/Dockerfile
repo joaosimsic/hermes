@@ -4,6 +4,9 @@ WORKDIR /app
 COPY bom/pom.xml bom/
 RUN mvn install -f bom/pom.xml -q
 
+COPY events/ events/
+RUN mvn install -f events/pom.xml -q
+
 COPY services/user-service/pom.xml services/user-service/
 RUN mvn dependency:go-offline -f services/user-service/pom.xml -q
 
