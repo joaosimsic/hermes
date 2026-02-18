@@ -50,6 +50,7 @@ deploy:
 portForward:
   - resourceType: service
     resourceName: gateway-api-gateway
+    namespace: hermes-dev
     port: 8080
     localPort: 8080
 
