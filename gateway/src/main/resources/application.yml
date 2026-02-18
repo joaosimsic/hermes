@@ -16,7 +16,7 @@ spring:
         - id: auth-service
           uri: ${AUTH_SERVICE_URL}
           predicates:
-            - Path=/api/auth/**
+            - Path=/auth/**
           filters:
             - name: RequestRateLimiter
               args:
@@ -32,7 +32,7 @@ spring:
         - id: user-service
           uri: ${USER_SERVICE_URL}
           predicates:
-            - Path=/api/users/**
+            - Path=/users/**
           filters:
             - name: RequestRateLimiter
               args:
@@ -97,8 +97,15 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
     gateway:
       access: unrestricted
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
 
 logging:
   level:
