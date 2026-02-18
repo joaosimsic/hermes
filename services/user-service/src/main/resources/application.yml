@@ -89,11 +89,17 @@ management:
         include: health,info,metrics,circuitbreakers,caches
   endpoint:
     health:
-      show-details: always
+      show-details: never
+      probes:
+        enabled: true
   health:
     circuitbreakers:
       enabled: true
     redis:
+      enabled: true
+    livenessState:
+      enabled: true
+    readinessState:
       enabled: true
 
 logging:
