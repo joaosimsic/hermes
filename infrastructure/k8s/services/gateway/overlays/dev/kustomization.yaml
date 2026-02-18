@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+- ../../../../shared/redis/gateway-redis/overlays/dev
+namePrefix: gateway-
+configMapGenerator:
+- name: gateway-config
+  envs:
+  - params.env
+secretGenerator:
+- name: gateway-secrets
+  envs:
+  - secrets.env
+labels:
+- pairs:
+    environment: dev
+  includeSelectors: true
