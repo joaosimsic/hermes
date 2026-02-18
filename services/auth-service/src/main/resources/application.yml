@@ -25,6 +25,10 @@ spring:
       ddl-auto: none
     show-sql: false
 
+  flyway:
+    user: ${SPRING_FLYWAY_USER}
+    password: ${SPRING_FLYWAY_PASSWORD}
+
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST}
@@ -96,10 +100,16 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
   health:
     circuitbreakers:
       enabled: true
     redis:
+      enabled: true
+    livenessState:
+      enabled: true
+    readinessState:
       enabled: true
 
 logging:
