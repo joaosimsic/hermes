@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../shared/rabbitmq/overlays/prod
+- ../../shared/keycloak/overlays/prod
+- ../../shared/ingress/overlays/prod
+- ../../services/auth-service/overlays/prod
+- ../../services/user-service/overlays/prod
+- ../../services/gateway/overlays/prod
+namespace: hermes-prod
+labels:
+- pairs:
+    environment: prod
+  includeSelectors: true
+- pairs:
+    cluster: prod
+  includeSelectors: true
+- pairs:
+    managed-by: kustomize
+  includeSelectors: true
