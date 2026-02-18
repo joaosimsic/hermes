@@ -43,10 +43,13 @@ manifests:
 
 deploy:
   kubectl: {}
+  statusCheck: true
+  statusCheckDeadlineSeconds: 600
+  tolerateFailuresUntilDeadline: true
 
 portForward:
   - resourceType: service
-    resourceName: api-gateway
+    resourceName: gateway-api-gateway
     port: 8080
     localPort: 8080
 

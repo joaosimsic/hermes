@@ -14,3 +14,20 @@ labels:
 - pairs:
     environment: dev
   includeSelectors: true
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: keycloak
+    spec:
+      template:
+        spec:
+          containers:
+          - name: keycloak
+            readinessProbe:
+              initialDelaySeconds: 30
+              periodSeconds: 5
+            livenessProbe:
+              initialDelaySeconds: 60
+              periodSeconds: 15

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 @Slf4j
 @Service
@@ -35,6 +36,7 @@ public class JwksService {
   @PostConstruct
   public void init() {
     refreshKeys()
+        .retryWhen(Retry.backoff(5, Duration.ofSeconds(5)).maxBackoff(Duration.ofSeconds(30)))
         .doOnSuccess(v -> log.info("Successfully fetched JWKS keys on startup"))
         .doOnError(
             e -> log.warn("Initial JWKS fetch failed, will retry on demand: {}", e.getMessage()))
@@ -64,6 +66,7 @@ public class JwksService {
         .uri(gatewayProperties.jwt().jwksUrl())
         .retrieve()
         .bodyToMono(JsonNode.class)
+        .timeout(Duration.ofSeconds(5))
         .publishOn(Schedulers.boundedElastic())
         .map(this::extractKeys)
         .doOnNext(
