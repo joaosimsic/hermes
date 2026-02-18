@@ -1,0 +1,66 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: hermes
+build:
+  local:
+    useBuildkit: true
+  artifacts:
+    - image: api-gateway
+      context: .
+      docker:
+        dockerfile: gateway/Dockerfile
+      sync:
+        manual:
+          - src: 'gateway/src/main/resources/**/*'
+            dest: /app/resources
+
+    - image: auth-service
+      context: .
+      docker:
+        dockerfile: services/auth-service/Dockerfile
+      sync:
+        manual:
+          - src: 'services/auth-service/src/main/resources/**/*'
+            dest: /app/resources
+
+    - image: user-service
+      context: .
+      docker:
+        dockerfile: services/user-service/Dockerfile
+      sync:
+        manual:
+          - src: 'services/user-service/src/main/resources/**/*'
+            dest: /app/resources
+
+manifests:
+  kustomize:
+    paths:
+      - infrastructure/k8s/clusters/dev
+    buildArgs:
+      - "--load-restrictor"
+      - "LoadRestrictionsNone"
+
+deploy:
+  kubectl: {}
+
+portForward:
+  - resourceType: service
+    resourceName: api-gateway
+    port: 8080
+    localPort: 8080
+
+profiles:
+  - name: prod
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/clusters/prod
+        buildArgs:
+          - "--load-restrictor"
+          - "LoadRestrictionsNone"
+    build:
+      artifacts:
+        - image: api-gateway
+        - image: auth-service
+        - image: user-service
