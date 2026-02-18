@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -23,8 +24,16 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
   private static final String GATEWAY_SECRET_HEADER = "X-Gateway-Secret";
   private static final String USER_ID_HEADER = "X-User-Id";
   private static final String USER_EMAIL_HEADER = "X-User-Email";
+  private static final List<String> PUBLIC_PATHS =
+      List.of("/actuator/health", "/swagger-ui", "/v3/api-docs");
 
   private final JwtProperties jwtProperties;
+
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) {
+    String path = request.getRequestURI();
+    return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+  }
 
   @Override
   protected void doFilterInternal(
