@@ -1,0 +1,16 @@
+**/secrets.env
+
+*.bak
+*.backup
+
+*.tmp
+*.swp
+*~
+
+.DS_Store
+.idea/
+.vscode/
+
+*.yaml.orig
+
+kustomize
