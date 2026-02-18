@@ -18,6 +18,7 @@ spring:
           predicates:
             - Path=/auth/**
           filters:
+            - RewritePath=/auth(?<segment>/?.*), /api/auth${segment}
             - name: RequestRateLimiter
               args:
                 '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_UNAUTHENTICATED}
