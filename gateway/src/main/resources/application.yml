@@ -94,14 +94,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: never
       probes:
         enabled: true
     gateway:
-      access: unrestricted
+      enabled: true
+      access: restricted
   health:
     livenessState:
       enabled: true
