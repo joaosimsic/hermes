@@ -96,17 +96,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,circuitbreakers,caches
+        include: health, info
   endpoint:
     health:
-      show-details: never
       probes:
         enabled: true
+      show-details: never 
   health:
-    circuitbreakers:
-      enabled: true
-    redis:
-      enabled: true
     livenessState:
       enabled: true
     readinessState:
