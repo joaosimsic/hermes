@@ -66,7 +66,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .getRequest()
                 .mutate()
                 .header("X-User-Email", userEmail)
-                .header("X-User-Id", userId != null ? userId : "")
+                .header("X-User-Id", userId)
                 .header("X-Gateway-Secret", props.secret())
                 .build())
         .build();

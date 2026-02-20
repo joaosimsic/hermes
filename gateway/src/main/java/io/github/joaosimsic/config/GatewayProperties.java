@@ -13,6 +13,7 @@ public record GatewayProperties(
     @Valid @NotNull JwtConfig jwt,
     @Valid @NotNull RateLimitConfig rateLimit,
     @NotBlank String secret) {
+
   public record JwtConfig(
       @NotBlank String jwksUrl, @Min(1) long cacheTtlSeconds, @NotBlank String expectedIssuer) {}
 
