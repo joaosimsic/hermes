@@ -37,12 +37,15 @@ spec:
           echo "RabbitMQ is ready!"
         env:
         - name: RABBITMQ_USER
-          value: admin
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: RABBITMQ_USERNAME
         - name: RABBITMQ_PASSWORD
           valueFrom:
             secretKeyRef:
               name: rabbitmq-secrets
-              key: RABBITMQ_DEFAULT_PASS
+              key: RABBITMQ_PASSWORD
       containers:
         - name: api-gateway
           image: api-gateway:latest
