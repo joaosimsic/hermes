@@ -12,3 +12,17 @@ spring:
       type: simple
       simple:
         auto-startup: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when_authorized 
+  health:
+    circuitbreakers:
+      enabled: true
+    redis:
+      enabled: true
