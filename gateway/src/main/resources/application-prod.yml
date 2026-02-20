@@ -21,6 +21,20 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics 
+  endpoint:
+    health:
+      show-details: never 
+      probes:
+        enabled: true
+    gateway:
+      enabled: false
+      access: none
+
 gateway:
   jwt:
     jwks-url: ${COGNITO_JWKS_URL}

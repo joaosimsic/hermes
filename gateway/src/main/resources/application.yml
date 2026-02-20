@@ -91,18 +91,6 @@ resilience4j:
         timeoutDuration: 10s
 
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: never
-      probes:
-        enabled: true
-    gateway:
-      enabled: true
-      access: restricted
   health:
     livenessState:
       enabled: true
