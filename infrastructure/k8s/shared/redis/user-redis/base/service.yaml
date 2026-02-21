@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-redis
+  name: user-cache
   labels:
     app: user-redis
     component: cache

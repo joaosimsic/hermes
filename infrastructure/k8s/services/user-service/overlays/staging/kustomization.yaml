@@ -4,7 +4,6 @@ resources:
 - ../../base
 - ../../../../shared/postgres/user-db/overlays/staging
 - ../../../../shared/redis/user-redis/overlays/staging
-namePrefix: user-
 configMapGenerator:
 - name: user-service-config
   envs:

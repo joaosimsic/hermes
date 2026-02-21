@@ -24,7 +24,7 @@ The Hermes platform consists of:
 
 ### Shared Infrastructure
 - **PostgreSQL** - Two separate instances (auth-db, user-db)
-- **Redis** - Three separate instances (auth-redis, gateway-redis, user-redis)
+- **Redis** - Three separate instances (auth-cache, gateway-cache, user-cache)
 - **RabbitMQ** - Message broker for inter-service communication
 - **Keycloak** - Identity and access management
 - **Ingress** - NGINX ingress controller for external access
@@ -73,9 +73,9 @@ infrastructure/k8s/
     │   │       └── prod/
     │   └── user-db/            # Same structure
     ├── redis/
-    │   ├── auth-redis/         # Auth service cache
-    │   ├── gateway-redis/      # Gateway cache
-    │   └── user-redis/         # User service cache
+    │   ├── auth-cache/         # Auth service cache
+    │   ├── gateway-cache/      # Gateway cache
+    │   └── user-cache/         # User service cache
     ├── rabbitmq/
     │   ├── base/
     │   └── overlays/

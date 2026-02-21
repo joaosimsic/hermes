@@ -19,7 +19,7 @@ spec:
         - sh
         - -c
         - |
-          until pg_isready -h auth-auth-postgres -p 5432 -U app_user; do
+          until pg_isready -h auth-db -p 5432 -U app_user; do
             echo "Waiting for PostgreSQL to be ready..."
             sleep 2
           done
@@ -29,14 +29,14 @@ spec:
           valueFrom:
             secretKeyRef:
               name: auth-service-secrets
-              key: SPRING_DATASOURCE_PASSWORD
+              key: APP_PASSWORD
       - name: wait-for-redis
         image: redis:7-alpine
         command:
         - sh
         - -c
         - |
-          until redis-cli -h auth-auth-redis -p 6379 ping | grep -q PONG; do
+          until redis-cli -h auth-cache -p 6379 ping | grep -q PONG; do
             echo "Waiting for Redis to be ready..."
             sleep 2
           done

@@ -2,10 +2,10 @@ spring:
   cloud:
     aws:
       region:
-        static: ${SPRING_CLOUD_AWS_REGION_STATIC}
+        static: ${AWS_DEFAULT_REGION}
       credentials:
-        access-key: ${SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
-        secret-key: ${SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY}
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
 
   rabbitmq:
     listener:

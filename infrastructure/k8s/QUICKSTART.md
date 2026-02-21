@@ -201,7 +201,7 @@ kubectl apply -k infrastructure/k8s/clusters/dev
 
 ### Caches
 - `auth-redis` - Auth service cache
-- `gateway-redis` - Gateway rate limiting cache
+- `gateway-cache` - Gateway rate limiting cache
 - `user-redis` - User service cache
 
 ### Services

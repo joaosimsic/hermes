@@ -6,7 +6,7 @@ resources:
 - pvc.yaml
 labels:
 - pairs:
-    app: gateway-redis
+    app: gateway-cache
   includeSelectors: true
 - pairs:
     managed-by: kustomize

@@ -44,7 +44,7 @@ Each with base + 3 overlays (dev/staging/prod):
 
 #### Shared Infrastructure
 - **Postgres** - Separated into `auth-db` and `user-db`
-- **Redis** - Separated into `auth-redis`, `gateway-redis`, `user-redis`
+- **Redis** - Separated into `auth-cache`, `gateway-cache`, `user-cache`
 - **RabbitMQ** - Message broker with secrets management
 - **Keycloak** - Identity provider with GitHub OAuth config
 - **Ingress** - NGINX ingress with environment-specific domains
@@ -96,9 +96,9 @@ infrastructure/k8s/
 │   │   ├── auth-db/                  # Separated DB
 │   │   └── user-db/                  # Separated DB
 │   ├── redis/
-│   │   ├── auth-redis/               # Separated cache
-│   │   ├── gateway-redis/            # Separated cache
-│   │   └── user-redis/               # Separated cache
+│   │   ├── auth-cache/               # Separated cache
+│   │   ├── gateway-cache/            # Separated cache
+│   │   └── user-cache/               # Separated cache
 │   ├── rabbitmq/
 │   ├── keycloak/
 │   └── ingress/

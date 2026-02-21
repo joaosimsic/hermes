@@ -64,5 +64,5 @@ spec:
           claimName: user-postgres-data
       - name: init-script
         configMap:
-          name: postgres-init-script
+          name: user-postgres-init-script
           defaultMode: 0755

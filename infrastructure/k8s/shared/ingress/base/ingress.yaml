@@ -18,7 +18,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: gateway-api-gateway
+                name: api-gateway
                 port:
                   number: 8080
           - path: /keycloak

@@ -19,7 +19,7 @@ spec:
         - sh
         - -c
         - |
-          until redis-cli -h gateway-gateway-redis -p 6379 ping | grep -q PONG; do
+          until redis-cli -h gateway-cache -p 6379 ping | grep -q PONG; do
             echo "Waiting for Redis to be ready..."
             sleep 2
           done

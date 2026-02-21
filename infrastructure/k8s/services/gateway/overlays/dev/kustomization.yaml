@@ -2,8 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ../../base
-- ../../../../shared/redis/gateway-redis/overlays/dev
-namePrefix: gateway-
+- ../../../../shared/redis/gateway-cache/overlays/dev
 configMapGenerator:
 - name: gateway-config
   envs:

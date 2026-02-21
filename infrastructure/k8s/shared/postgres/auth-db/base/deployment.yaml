@@ -64,5 +64,5 @@ spec:
           claimName: auth-postgres-data
       - name: init-script
         configMap:
-          name: postgres-init-script
+          name: auth-postgres-init-script
           defaultMode: 0755

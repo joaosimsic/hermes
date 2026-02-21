@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gateway-redis
+  name: gateway-cache
   labels:
-    app: gateway-redis
+    app: gateway-cache
     component: cache
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gateway-redis
+      app: gateway-cache
   template:
     metadata:
       labels:
-        app: gateway-redis
+        app: gateway-cache
         component: cache
     spec:
       containers:
@@ -47,4 +47,4 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: gateway-redis-data
+          claimName: gateway-cache-data

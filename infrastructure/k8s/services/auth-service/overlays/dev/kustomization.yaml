@@ -4,7 +4,6 @@ resources:
 - ../../base
 - ../../../../shared/postgres/auth-db/overlays/dev
 - ../../../../shared/redis/auth-redis/overlays/dev
-namePrefix: auth-
 configMapGenerator:
 - name: auth-service-config
   envs:

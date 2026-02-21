@@ -1,20 +1,22 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${GATEWAY_PORT}
 
 spring:
   application:
     name: api-gateway
+  profiles:
+    active: ${GATEWAY_PROFILE}
 
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST}
-      port: ${SPRING_DATA_REDIS_PORT}
+      host: ${GATEWAY_CACHE_HOST}
+      port: ${REDIS_PORT}
 
   cloud:
     gateway:
       routes:
         - id: auth-service
-          uri: ${AUTH_SERVICE_URL}
+          uri: http://${AUTH_SERVICE_HOST}:${AUTH_SERVICE_PORT}
           predicates:
             - Path=/auth/**
           filters:
@@ -31,7 +33,7 @@ spring:
                 fallbackUri: forward:/fallback/auth-service
 
         - id: user-service
-          uri: ${USER_SERVICE_URL}
+          uri: http://${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
           predicates:
             - Path=/users/**
           filters:
@@ -48,12 +50,12 @@ spring:
                 fallbackUri: forward:/fallback/user-service
 
         - id: jwks
-          uri: ${USER_SERVICE_URL}
+          uri: http://${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
           predicates:
             - Path=/.well-known/jwks.json
 
         - id: user-service-docs
-          uri: ${USER_SERVICE_URL}
+          uri: http://${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
           predicates:
             - Path=/swagger-ui/**,/v3/api-docs/**
 
