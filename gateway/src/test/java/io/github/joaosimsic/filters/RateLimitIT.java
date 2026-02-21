@@ -48,10 +48,10 @@ public class RateLimitIT {
     userServiceMock.start();
 
     authServiceMock.stubFor(
-        any(urlPathMatching("/api/auth/.*"))
+        any(urlPathMatching("/api/auth.*"))
             .willReturn(aResponse().withStatus(200).withBody("{}")));
     userServiceMock.stubFor(
-        any(urlPathMatching("/api/users/.*"))
+        any(urlPathMatching("/api/users.*"))
             .willReturn(aResponse().withStatus(200).withBody("{}")));
   }
 
@@ -100,7 +100,7 @@ public class RateLimitIT {
     for (int i = 0; i < 10; i++) {
       webTestClient
           .get()
-          .uri("/api/auth/login")
+          .uri("/auth/login")
           .exchange()
           .expectHeader()
           .exists("X-RateLimit-Remaining");
@@ -108,7 +108,7 @@ public class RateLimitIT {
 
     webTestClient
         .get()
-        .uri("/api/auth/login")
+        .uri("/auth/login")
         .exchange()
         .expectStatus()
         .isEqualTo(429)
@@ -145,7 +145,7 @@ public class RateLimitIT {
 
   @Test
   void shouldReturnCorrectRateLimitHeaders() {
-    var response = webTestClient.get().uri("/api/auth/login").exchange().returnResult(String.class);
+    var response = webTestClient.get().uri("/auth/login").exchange().returnResult(String.class);
 
     assertThat(response.getResponseHeaders().getFirst("X-RateLimit-Limit")).isNotNull();
     assertThat(response.getResponseHeaders().getFirst("X-RateLimit-Remaining")).isNotNull();
