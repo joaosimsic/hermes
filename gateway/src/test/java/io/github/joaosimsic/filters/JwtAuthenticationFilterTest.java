@@ -147,13 +147,13 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
   void shouldBypassAuthForPublicAuthPath() {
     webTestClient
         .get()
-        .uri("/api/auth/login")
+        .uri("/auth/login")
         .exchange()
         .expectStatus()
         .value(
             status -> {
               if (status == 401) {
-                throw new AssertionError("Public path /api/auth/login should bypass JWT auth");
+                throw new AssertionError("Public path /auth/login should bypass JWT auth");
               }
             });
   }
