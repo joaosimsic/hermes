@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 @Slf4j
 @Service
@@ -34,10 +35,16 @@ public class JwksService {
 
   @PostConstruct
   public void init() {
+    log.info("Starting JWKS key fetch from {}", gatewayProperties.jwt().jwksUrl());
     refreshKeys()
-        .doOnSuccess(v -> log.info("Successfully fetched JWKS keys on startup"))
-        .doOnError(
-            e -> log.warn("Initial JWKS fetch failed, will retry on demand: {}", e.getMessage()))
+        .retryWhen(
+            Retry.backoff(10, Duration.ofSeconds(5))
+                .maxBackoff(Duration.ofSeconds(30))
+                .doBeforeRetry(
+                    signal -> log.info("JWKS fetch attempt {} failed, retrying...", signal.totalRetries() + 1)))
+        .doOnSuccess(v -> log.info("Successfully fetched JWKS keys"))
+        .doOnError(e -> log.warn("JWKS fetch failed after retries, will fetch on demand"))
+        .onErrorComplete()
         .subscribe();
   }
 
@@ -64,6 +71,7 @@ public class JwksService {
         .uri(gatewayProperties.jwt().jwksUrl())
         .retrieve()
         .bodyToMono(JsonNode.class)
+        .timeout(Duration.ofSeconds(5))
         .publishOn(Schedulers.boundedElastic())
         .map(this::extractKeys)
         .doOnNext(
@@ -74,7 +82,7 @@ public class JwksService {
               log.debug("JWKS refreshed. Cache size: {}", keyCache.size());
             })
         .then()
-        .doOnError(e -> log.error("JWKS refresh failed: {}", e.getMessage()));
+        .doOnError(e -> log.debug("JWKS refresh failed: {}", e.getMessage()));
   }
 
   private Map<String, PublicKey> extractKeys(JsonNode root) {

@@ -4,7 +4,7 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: ${CORS_ALLOWED_ORIGINS}
+            allowedOrigins: "${CORS_ALLOWED_ORIGINS}"
             allowedMethods:
               - GET
               - POST
@@ -21,7 +21,23 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics 
+  endpoint:
+    health:
+      show-details: never 
+      probes:
+        enabled: true
+    gateway:
+      enabled: false
+      access: none
+
 gateway:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
   jwt:
     jwks-url: ${COGNITO_JWKS_URL}
     expected-issuer: ${COGNITO_JWT_ISSUER}

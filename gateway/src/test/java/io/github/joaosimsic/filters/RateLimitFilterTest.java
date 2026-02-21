@@ -24,7 +24,7 @@ public class RateLimitFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/auth/login")
+        .uri("/auth/login")
         .exchange()
         .expectStatus()
         .isEqualTo(429)
@@ -48,7 +48,7 @@ public class RateLimitFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/auth/login")
+        .uri("/auth/login")
         .exchange()
         .expectHeader()
         .exists("X-RateLimit-Remaining")

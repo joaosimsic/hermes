@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+    component: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: keycloak
+        component: auth
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:24.0
+          args:
+            - start-dev
+            - --import-realm
+            - --http-port=8180
+          ports:
+            - containerPort: 8180
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: keycloak-config
+            - secretRef:
+                name: keycloak-secrets
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - mountPath: /opt/keycloak/data/import/realm-export.json
+              name: keycloak-realm-volume
+              subPath: realm-export.json
+          
+          livenessProbe:
+            tcpSocket:
+              port: 8180
+            initialDelaySeconds: 90  
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 8180
+            initialDelaySeconds: 60  
+            periodSeconds: 10
+
+      restartPolicy: Always
+      volumes:
+        - name: keycloak-realm-volume
+          configMap:
+            name: keycloak-realm-config
+            items:
+              - key: realm-export.json
+                path: realm-export.json
