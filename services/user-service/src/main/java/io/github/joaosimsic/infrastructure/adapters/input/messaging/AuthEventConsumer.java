@@ -1,6 +1,7 @@
 package io.github.joaosimsic.infrastructure.adapters.input.messaging;
 
 import io.github.joaosimsic.core.domain.User;
+import io.github.joaosimsic.core.exceptions.business.ConflictException;
 import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
 import io.github.joaosimsic.events.auth.UserRegisteredEvent;
@@ -35,6 +36,10 @@ public class AuthEventConsumer {
       userUseCase.createUser(user);
 
       log.info("Successfully created local user for external ID: {}", event.getExternalId());
+    } catch (ConflictException e) {
+      log.info(
+          "User already exists for external ID: {}, acknowledging message",
+          event.getExternalId());
     } catch (Exception e) {
       log.error(
           "Error processing AuthUserRegisteredEvent for user {}: {}",

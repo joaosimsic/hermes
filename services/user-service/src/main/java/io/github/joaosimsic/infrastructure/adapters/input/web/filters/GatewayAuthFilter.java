@@ -41,8 +41,15 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
 
     String secret = request.getHeader(GATEWAY_SECRET_HEADER);
+    String expectedSecret = jwtProperties.getSecret();
+    
+    log.info("GatewayAuthFilter: path={}, receivedSecret={}, expectedSecret={}", 
+        request.getRequestURI(),
+        secret != null ? secret.substring(0, Math.min(10, secret.length())) + "..." : "null",
+        expectedSecret != null ? expectedSecret.substring(0, Math.min(10, expectedSecret.length())) + "..." : "null");
 
-    if (secret == null || !jwtProperties.getSecret().equals(secret)) {
+    if (secret == null || !expectedSecret.equals(secret)) {
+      log.warn("GatewayAuthFilter: Secret mismatch - received={}, expected={}", secret, expectedSecret);
       throw new BadCredentialsException("Invalid or missing gateway secret");
     }
 
@@ -53,7 +60,7 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
       GatewayPrincipal principal = new GatewayPrincipal(userId, userEmail);
       var auth = new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList());
       SecurityContextHolder.getContext().setAuthentication(auth);
-      log.debug("Authenticated request from gateway for user: {}", userId);
+      log.info("GatewayAuthFilter: Authenticated user={}", userId);
     }
 
     filterChain.doFilter(request, response);
