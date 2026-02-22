@@ -10,6 +10,7 @@ import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -32,7 +33,8 @@ public class AuthService implements AuthUseCase {
             .withEmail(email)
             .withName(name)
             .withOccurredAt(Instant.now())
-            .withEventType("USER_REGISTERED");
+            .withEventType("USER_REGISTERED")
+            .withTraceId(MDC.get("traceId"));
 
     outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
@@ -83,7 +85,8 @@ public class AuthService implements AuthUseCase {
             .withEmail(user.getEmail())
             .withName(user.getName())
             .withOccurredAt(Instant.now())
-            .withEventType("USER_REGISTERED");
+            .withEventType("USER_REGISTERED")
+            .withTraceId(MDC.get("traceId"));
 
     outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
@@ -108,7 +111,8 @@ public class AuthService implements AuthUseCase {
             .withExternalId(userId)
             .withNewEmail(newEmail)
             .withOccurredAt(Instant.now())
-            .withEventType("USER_EMAIL_UPDATED");
+            .withEventType("USER_EMAIL_UPDATED")
+            .withTraceId(MDC.get("traceId"));
 
     outboxPort.save(event, String.valueOf(userId), "AUTH", event.getEventType());
 
