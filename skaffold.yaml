@@ -54,6 +54,68 @@ portForward:
     port: 8080
     localPort: 8080
 
+verify:
+  - name: api-gateway-health
+    executionMode:
+      kubernetesCluster:
+        overrides: '{"metadata":{"namespace":"hermes-dev"}}'
+    container:
+      name: api-gateway-check
+      image: curlimages/curl:8.5.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          for i in $(seq 1 30); do
+            if curl -sf http://api-gateway:8080/actuator/health; then
+              echo "API Gateway is healthy"
+              exit 0
+            fi
+            echo "Waiting for API Gateway... attempt $i"
+            sleep 2
+          done
+          echo "API Gateway health check failed"
+          exit 1
+  - name: auth-service-health
+    executionMode:
+      kubernetesCluster:
+        overrides: '{"metadata":{"namespace":"hermes-dev"}}'
+    container:
+      name: auth-service-check
+      image: curlimages/curl:8.5.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          for i in $(seq 1 30); do
+            if curl -sf http://auth-service:8082/actuator/health; then
+              echo "Auth Service is healthy"
+              exit 0
+            fi
+            echo "Waiting for Auth Service... attempt $i"
+            sleep 2
+          done
+          echo "Auth Service health check failed"
+          exit 1
+  - name: user-service-health
+    executionMode:
+      kubernetesCluster:
+        overrides: '{"metadata":{"namespace":"hermes-dev"}}'
+    container:
+      name: user-service-check
+      image: curlimages/curl:8.5.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          for i in $(seq 1 30); do
+            if curl -sf http://user-service:8081/actuator/health; then
+              echo "User Service is healthy"
+              exit 0
+            fi
+            echo "Waiting for User Service... attempt $i"
+            sleep 2
+          done
+          echo "User Service health check failed"
+          exit 1
+
 profiles:
   - name: prod
     manifests:

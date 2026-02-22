@@ -7,6 +7,10 @@ app:
       initial-backoff-ms: 100
       multiplier: 2
       max-delay-ms: 1000
+  outbox:
+    poll-interval: 1000
+    batch-size: 10
+    max-attempts: 3
 
 spring:
   autoconfigure:
