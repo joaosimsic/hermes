@@ -161,7 +161,7 @@ public class RabbitConfig {
   }
 
   @Bean
-  RetryTemplate retryTemplate() {
+  RetryTemplate rabbitRetryTemplate() {
     RetryTemplate retryTemplate = new RetryTemplate();
 
     Map<Class<? extends Throwable>, Boolean> retryableExceptions = new HashMap<>();
@@ -189,7 +189,7 @@ public class RabbitConfig {
   SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
       ConnectionFactory connectionFactory,
       Jackson2JsonMessageConverter messageConverter,
-      RetryTemplate retryTemplate,
+      RetryTemplate rabbitRetryTemplate,
       MessageRecoverer messageRecoverer) {
     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 
@@ -198,7 +198,7 @@ public class RabbitConfig {
     factory.setDefaultRequeueRejected(false);
     factory.setAdviceChain(
         org.springframework.amqp.rabbit.config.RetryInterceptorBuilder.stateless()
-            .retryOperations(retryTemplate)
+            .retryOperations(rabbitRetryTemplate)
             .recoverer(messageRecoverer)
             .build());
 
