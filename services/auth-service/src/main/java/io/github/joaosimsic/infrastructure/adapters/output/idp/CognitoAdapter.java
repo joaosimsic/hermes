@@ -47,7 +47,7 @@ public class CognitoAdapter implements AuthPort {
     try {
       AdminCreateUserRequest userRequest =
           AdminCreateUserRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
+              .userPoolId(cognitoProperties.userPoolId())
               .username(email)
               .userAttributes(
                   AttributeType.builder().name("email").value(email).build(),
@@ -67,7 +67,7 @@ public class CognitoAdapter implements AuthPort {
 
       AdminSetUserPasswordRequest passwordRequest =
           AdminSetUserPasswordRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
+              .userPoolId(cognitoProperties.userPoolId())
               .username(email)
               .password(password)
               .permanent(true)
@@ -90,8 +90,8 @@ public class CognitoAdapter implements AuthPort {
     try {
       AdminInitiateAuthRequest authRequest =
           AdminInitiateAuthRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
-              .clientId(cognitoProperties.getClientId())
+              .userPoolId(cognitoProperties.userPoolId())
+              .clientId(cognitoProperties.clientId())
               .authFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)
               .authParameters(Map.of("USERNAME", email, "PASSWORD", password))
               .build();
@@ -110,8 +110,8 @@ public class CognitoAdapter implements AuthPort {
     try {
       AdminInitiateAuthRequest authRequest =
           AdminInitiateAuthRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
-              .clientId(cognitoProperties.getClientId())
+              .userPoolId(cognitoProperties.userPoolId())
+              .clientId(cognitoProperties.clientId())
               .authFlow(AuthFlowType.REFRESH_TOKEN_AUTH)
               .authParameters(Map.of("REFRESH_TOKEN", refreshToken))
               .build();
@@ -173,17 +173,17 @@ public class CognitoAdapter implements AuthPort {
   public String getGitHubAuthUrl(String redirectUri, String state) {
     return String.format(
         "%s/oauth2/authorize?identity_provider=GitHub&client_id=%s&response_type=code&redirect_uri=%s&state=%s",
-        cognitoProperties.getDomainUrl(), cognitoProperties.getClientId(), redirectUri, state);
+        cognitoProperties.domainUrl(), cognitoProperties.clientId(), redirectUri, state);
   }
 
   @Override
   public AuthTokens exchangeCodeForTokens(String code, String redirectUri) {
-    String tokenUrl = cognitoProperties.getDomainUrl() + "/oauth2/token";
+    String tokenUrl = cognitoProperties.domainUrl() + "/oauth2/token";
 
     MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
     formData.add("grant_type", "authorization_code");
-    formData.add("client_id", cognitoProperties.getClientId());
-    formData.add("client_secret", cognitoProperties.getClientSecret());
+    formData.add("client_id", cognitoProperties.clientId());
+    formData.add("client_secret", cognitoProperties.clientSecret());
     formData.add("code", code);
     formData.add("redirect_uri", redirectUri);
 
@@ -219,7 +219,7 @@ public class CognitoAdapter implements AuthPort {
     try {
       AdminUpdateUserAttributesRequest request =
           AdminUpdateUserAttributesRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
+              .userPoolId(cognitoProperties.userPoolId())
               .username(userId)
               .userAttributes(
                   AttributeType.builder().name("email").value(newEmail).build(),
@@ -249,7 +249,7 @@ public class CognitoAdapter implements AuthPort {
 
       AdminSetUserPasswordRequest passwordRequest =
           AdminSetUserPasswordRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
+              .userPoolId(cognitoProperties.userPoolId())
               .username(userId)
               .password(newPassword)
               .permanent(true)
@@ -270,7 +270,7 @@ public class CognitoAdapter implements AuthPort {
     try {
       AdminGetUserRequest getUserRequest =
           AdminGetUserRequest.builder()
-              .userPoolId(cognitoProperties.getUserPoolId())
+              .userPoolId(cognitoProperties.userPoolId())
               .username(userId)
               .build();
 

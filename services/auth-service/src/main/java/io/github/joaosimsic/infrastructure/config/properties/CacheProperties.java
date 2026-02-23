@@ -1,10 +1,10 @@
 package io.github.joaosimsic.infrastructure.config.properties;
 
-import jakarta.validation.constraints.Min;
+import com.sun.istack.NotNull;
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "app.outbox")
-public record OutboxProperties(
-    @Min(1) int batchSize, @Min(1) int maxAttempts, @Min(100) long pollInterval) {}
+@ConfigurationProperties(prefix = "spring.cache")
+public record CacheProperties(@NotNull Duration ttl, @NotNull boolean cacheNullValues) {}

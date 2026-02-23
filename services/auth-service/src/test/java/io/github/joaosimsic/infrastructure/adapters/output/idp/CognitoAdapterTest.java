@@ -51,12 +51,13 @@ class CognitoAdapterTest {
 
   @BeforeEach
   void setUp() {
-    cognitoProperties = new CognitoProperties();
-    cognitoProperties.setUserPoolId("us-east-1_testPool");
-    cognitoProperties.setClientId("test-client-id");
-    cognitoProperties.setClientSecret("test-client-secret");
-    cognitoProperties.setDomainUrl("https://test.auth.us-east-1.amazoncognito.com");
-    cognitoProperties.setRegion("us-east-1");
+    cognitoProperties =
+        new CognitoProperties(
+            "us-east-1_testPool",
+            "test-client-id",
+            "test-client-secret",
+            "https://test.auth.us-east-1.amazoncognito.com",
+            "us-east-1");
 
     cognitoAdapter = new CognitoAdapter(cognitoClient, cognitoProperties, cacheManager);
   }
@@ -317,9 +318,9 @@ class CognitoAdapterTest {
 
       String result = cognitoAdapter.getGitHubAuthUrl(redirectUri, state);
 
-      assertTrue(result.contains(cognitoProperties.getDomainUrl()));
+      assertTrue(result.contains(cognitoProperties.domainUrl()));
       assertTrue(result.contains("identity_provider=GitHub"));
-      assertTrue(result.contains("client_id=" + cognitoProperties.getClientId()));
+      assertTrue(result.contains("client_id=" + cognitoProperties.clientId()));
       assertTrue(result.contains("redirect_uri=" + redirectUri));
       assertTrue(result.contains("state=" + state));
       assertTrue(result.contains("response_type=code"));
