@@ -136,7 +136,7 @@ kubectl get svc -n hermes-dev
 kubectl get pvc -n hermes-dev
 
 # View logs
-kubectl logs -n hermes-dev -l app=gateway-api-gateway --tail=50
+kubectl logs -n hermes-dev -l app=gateway-http-gateway --tail=50
 kubectl logs -n hermes-dev -l app=auth-auth-service --tail=50
 kubectl logs -n hermes-dev -l app=user-user-service --tail=50
 ```
@@ -205,7 +205,7 @@ kubectl apply -k infrastructure/k8s/clusters/dev
 - `user-redis` - User service cache
 
 ### Services
-- `gateway-api-gateway` (port 8080) - API Gateway
+- `gateway-http-gateway` (port 8080) - API Gateway
 - `auth-auth-service` (port 8082) - Auth Service
 - `user-user-service` (port 8081) - User Service
 - `keycloak` (port 8180) - Identity Provider
@@ -232,13 +232,13 @@ kubectl apply -k infrastructure/k8s/clusters/dev
 kubectl logs -f -n hermes-dev -l component=service
 
 # Port forward to a service (bypass ingress)
-kubectl port-forward -n hermes-dev svc/gateway-api-gateway 8080:8080
+kubectl port-forward -n hermes-dev svc/gateway-http-gateway 8080:8080
 
 # Execute into a pod
 kubectl exec -it -n hermes-dev <pod-name> -- /bin/sh
 
 # Restart a deployment
-kubectl rollout restart deployment/gateway-api-gateway -n hermes-dev
+kubectl rollout restart deployment/gateway-http-gateway -n hermes-dev
 
 # View resource usage
 kubectl top pods -n hermes-dev

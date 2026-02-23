@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: api-gateway
+    name: http-gateway
   profiles:
     active: ${GATEWAY_PROFILE}
 

@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
+  name: http-gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api-gateway
+      app: http-gateway
   template:
     metadata:
       labels:
-        app: api-gateway
+        app: http-gateway
       annotations:
         prometheus.io/scrape: "true"           
         prometheus.io/path: "/actuator/prometheus"
@@ -28,6 +28,17 @@ spec:
             sleep 2
           done
           echo "Redis is ready!"
+      - name: wait-for-keycloak
+        image: curlimages/curl:8.5.0
+        command:
+        - sh
+        - -c
+        - |
+            until curl -s -f -o /dev/null http://keycloak:8180/realms/hermes; do
+              echo "Waiting for Keycloak to respond at http://keycloak:8180/realms/hermes..."
+              sleep 5
+            done
+            echo "Keycloak is ready!"
       - name: wait-for-rabbitmq
         image: curlimages/curl:8.5.0
         command:
@@ -51,8 +62,8 @@ spec:
               name: rabbitmq-secrets
               key: RABBITMQ_PASSWORD
       containers:
-        - name: api-gateway
-          image: api-gateway:latest
+        - name: http-gateway
+          image: http-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -65,7 +76,7 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 20
             periodSeconds: 5
             failureThreshold: 30
             timeoutSeconds: 3

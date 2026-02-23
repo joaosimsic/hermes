@@ -12,9 +12,9 @@ secretGenerator:
   envs:
   - secrets.env
 patches:
-- patch: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-gateway\n\
+- patch: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: http-gateway\n\
     spec:\n  replicas: 2\n  template:\n    spec:\n      containers:\n      - name:\
-    \ api-gateway\n        resources:\n          requests:\n            memory: \"\
+    \ http-gateway\n        resources:\n          requests:\n            memory: \"\
     512Mi\"\n            cpu: \"500m\"\n          limits:\n            memory: \"\
     1Gi\"\n            cpu: \"1000m\""
 labels:

@@ -72,21 +72,21 @@ generate_files() {
 
 echo -e "Validating and generating manifests..."
 
-GATEWAY_VARS=(
+HTTP_GATEWAY_VARS=(
     "GATEWAY_PROFILE" "GATEWAY_PORT" "GATEWAY_SECRET" "GATEWAY_CACHE_HOST" 
     "REDIS_PORT" "RATE_LIMIT_AUTHENTICATED" "RATE_LIMIT_AUTHENTICATED_BURST"
     "RATE_LIMIT_UNAUTHENTICATED" "RATE_LIMIT_UNAUTHENTICATED_BURST" "CACHE_TTL_SECONDS"
     "AUTH_SERVICE_HOST" "AUTH_SERVICE_PORT" "USER_SERVICE_HOST" "USER_SERVICE_PORT"
 )
-GATEWAY_DEV_VARS=("KC_JWKS_URL" "KC_JWT_ISSUER")
-GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_ORIGINS")
+HTTP_GATEWAY_DEV_VARS=("KC_JWKS_URL" "KC_JWT_ISSUER")
+HTTP_GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_ORIGINS")
 
 if [[ "$ENV" == "dev" ]]; then
-    generate_files "services/gateway/overlays/$ENV" "${GATEWAY_VARS[@]}" "${GATEWAY_DEV_VARS[@]}"
+    generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}" "${HTTP_GATEWAY_DEV_VARS[@]}"
 elif [[ "$ENV" == "prod" ]]; then
-    generate_files "services/gateway/overlays/$ENV" "${GATEWAY_VARS[@]}" "${GATEWAY_PROD_VARS[@]}"
+    generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}" "${HTTP_GATEWAY_PROD_VARS[@]}"
 else
-    generate_files "services/gateway/overlays/$ENV" "${GATEWAY_VARS[@]}"
+    generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}"
 fi
 
 AUTH_VARS=(

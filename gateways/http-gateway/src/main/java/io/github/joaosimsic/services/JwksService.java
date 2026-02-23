@@ -41,11 +41,16 @@ public class JwksService {
             Retry.backoff(10, Duration.ofSeconds(5))
                 .maxBackoff(Duration.ofSeconds(30))
                 .doBeforeRetry(
-                    signal -> log.info("JWKS fetch attempt {} failed, retrying...", signal.totalRetries() + 1)))
-        .doOnSuccess(v -> log.info("Successfully fetched JWKS keys"))
-        .doOnError(e -> log.warn("JWKS fetch failed after retries, will fetch on demand"))
-        .onErrorComplete()
-        .subscribe();
+                    signal ->
+                        log.warn(
+                            "JWKS fetch attempt {} failed, retrying...",
+                            signal.totalRetries() + 1)))
+        .subscribe(
+            v -> log.info("Successfully fetched JWKS keys"),
+            e ->
+                log.error(
+                    "Permanent JWKS fetch failure: {}. Gateway will fail requests until resolved.",
+                    e.getMessage()));
   }
 
   public Mono<PublicKey> getPublicKey(String keyId) {

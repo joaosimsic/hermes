@@ -8,7 +8,7 @@ resources:
 
 - ../../services/auth-service/overlays/prod
 - ../../services/user-service/overlays/prod
-- ../../services/gateway/overlays/prod
+- ../../gateways/http-gateway/overlays/prod
 
 namespace: hermes-prod
 labels:
