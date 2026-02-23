@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scylladb-init
+data:
+  init.cql: |
+    CREATE KEYSPACE IF NOT EXISTS chat WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+    USE chat;
+
+    CREATE TABLE IF NOT EXISTS messages (
+        conversation_id UUID,
+        message_id TIMEUUID,
+        sender_id UUID,
+        content TEXT,
+        media_id UUID,
+        message_type TEXT,
+        created_at TIMESTAMP,
+        PRIMARY KEY (conversation_id, message_id)
+    ) WITH CLUSTERING ORDER BY (message_id DESC)
+      AND compaction = {'class': 'TimeWindowCompactionStrategy', 'compaction_window_size': 1, 'compaction_window_unit': 'DAYS'};
+
+    CREATE TABLE IF NOT EXISTS conversations (
+        id UUID PRIMARY KEY,
+        type TEXT,
+        name TEXT,
+        created_by UUID,
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS participants (
+        conversation_id UUID,
+        user_id UUID,
+        joined_at TIMESTAMP,
+        role TEXT,
+        last_read_message_id TIMEUUID,
+        PRIMARY KEY (conversation_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS inbox (
+        user_id UUID,
+        conversation_id UUID,
+        last_message_at TIMESTAMP,
+        last_message_preview TEXT,
+        last_message_sender_id UUID,
+        unread_count INT,
+        PRIMARY KEY (user_id, last_message_at, conversation_id)
+    ) WITH CLUSTERING ORDER BY (last_message_at DESC, conversation_id ASC);
+
+    CREATE TABLE IF NOT EXISTS user_conversations (
+        user_id UUID,
+        conversation_id UUID,
+        joined_at TIMESTAMP,
+        PRIMARY KEY (user_id, conversation_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_participants_user ON participants (user_id);

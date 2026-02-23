@@ -5,10 +5,14 @@ resources:
   - ../../shared/rabbitmq/overlays/dev
   - ../../shared/keycloak/overlays/dev
   - ../../shared/ingress/overlays/dev
+  - ../../shared/nats/overlays/dev
+  - ../../shared/scylladb/overlays/dev
+  - ../../shared/minio/overlays/dev
 
   - ../../services/auth-service/overlays/dev
   - ../../services/user-service/overlays/dev
   - ../../services/gateway/overlays/dev
+  - ../../services/ws-gateway/overlays/dev
 
 namespace: hermes-dev
 

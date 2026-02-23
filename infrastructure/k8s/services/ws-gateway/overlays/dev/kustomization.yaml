@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+secretGenerator:
+- name: ws-gateway-secrets
+  envs:
+  - secrets.env
+labels:
+- pairs:
+    environment: dev
+  includeSelectors: true
+patches:
+- patch: |-
+    - op: replace
+      path: /data/JWKS_URL
+      value: "http://keycloak:8180/realms/hermes/protocol/openid-connect/certs"
+    - op: replace
+      path: /data/JWT_ISSUER
+      value: "http://localhost:8180/realms/hermes"
+  target:
+    kind: ConfigMap
+    name: ws-gateway-config

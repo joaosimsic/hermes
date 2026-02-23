@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: scylladb
+  labels:
+    app: scylladb
+    component: database
+spec:
+  serviceName: scylladb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scylladb
+  template:
+    metadata:
+      labels:
+        app: scylladb
+        component: database
+    spec:
+      containers:
+      - name: scylladb
+        image: scylladb/scylla:5.4
+        args:
+        - "--smp"
+        - "1"
+        - "--memory"
+        - "512M"
+        - "--overprovisioned"
+        - "1"
+        - "--developer-mode"
+        - "1"
+        ports:
+        - containerPort: 9042
+          name: cql
+        - containerPort: 9160
+          name: thrift
+        - containerPort: 10000
+          name: rest
+        - containerPort: 7000
+          name: inter-node
+        - containerPort: 7001
+          name: inter-node-ssl
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/scylla
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+          exec:
+            command:
+            - nodetool
+            - status
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - cqlsh
+            - "-e"
+            - "SELECT now() FROM system.local"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: scylladb-init
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
