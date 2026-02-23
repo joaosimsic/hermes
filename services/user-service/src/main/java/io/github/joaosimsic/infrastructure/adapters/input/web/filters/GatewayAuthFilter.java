@@ -41,7 +41,7 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
 
     String secret = request.getHeader(GATEWAY_SECRET_HEADER);
-    String expectedSecret = jwtProperties.getSecret();
+    String expectedSecret = jwtProperties.secret();
     
     log.info("GatewayAuthFilter: path={}, receivedSecret={}, expectedSecret={}", 
         request.getRequestURI(),
