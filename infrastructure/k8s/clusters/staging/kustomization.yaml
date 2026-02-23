@@ -4,9 +4,12 @@ resources:
 - ../../shared/rabbitmq/overlays/staging
 - ../../shared/keycloak/overlays/staging
 - ../../shared/ingress/overlays/staging
+  - ../../shared/observability/base
+
 - ../../services/auth-service/overlays/staging
 - ../../services/user-service/overlays/staging
 - ../../services/gateway/overlays/staging
+
 namespace: hermes-staging
 labels:
 - pairs:

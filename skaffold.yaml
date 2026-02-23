@@ -38,11 +38,15 @@ manifests:
     paths:
       - infrastructure/k8s/clusters/dev
     buildArgs:
-      - "--load-restrictor"
-      - "LoadRestrictionsNone"
+      - "--load-restrictor=LoadRestrictionsNone"
+      - "--enable-helm"
 
 deploy:
-  kubectl: {}
+  kubectl:
+    flags:
+      apply:
+        - "--server-side"
+        - "--force-conflicts"
   statusCheck: true
   statusCheckDeadlineSeconds: 600
   tolerateFailuresUntilDeadline: true
@@ -123,8 +127,8 @@ profiles:
         paths:
           - infrastructure/k8s/clusters/prod
         buildArgs:
-          - "--load-restrictor"
-          - "LoadRestrictionsNone"
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
     build:
       artifacts:
         - image: api-gateway

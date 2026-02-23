@@ -6,7 +6,7 @@ resources:
 configMapGenerator:
 - name: keycloak-realm-config
   files:
-  - realm-export.json=../../../../keycloak/realm-export.json
+  - realm-export.json=realm-export.json
 labels:
 - pairs:
     app: keycloak
