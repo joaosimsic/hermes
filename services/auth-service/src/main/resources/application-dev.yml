@@ -17,6 +17,6 @@ keycloak:
   realm: ${KEYCLOAK_REALM}
   client-id: ${KEYCLOAK_CLIENT_ID}
   admin:
-    username: ${KEYCLOAK_ADMIN_USERNAME}
+    username: ${KEYCLOAK_ADMIN}
     password: ${KEYCLOAK_ADMIN_PASSWORD}
 
