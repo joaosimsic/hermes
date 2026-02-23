@@ -15,5 +15,4 @@
 
 kustomize
 
-infrastructure/k8s/shared/observability/base/charts/kube-prometheus-stack-56.6.0/
-infrastructure/k8s/shared/observability/base/charts/loki-stack-2.10.1/
+shared/observability/base/charts/
