@@ -1,9 +1,9 @@
 services:
-  api-gateway:
+  http-gateway:
     build:
       context: .
       dockerfile: gateway/Dockerfile
-    container_name: api-gateway
+    container_name: http-gateway
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     environment:

@@ -333,13 +333,13 @@ kubectl apply -k clusters/prod
 
 ```bash
 # Update a specific service
-kubectl rollout restart deployment/gateway-api-gateway -n hermes-dev
+kubectl rollout restart deployment/gateway-http-gateway -n hermes-dev
 
 # Check rollout status
-kubectl rollout status deployment/gateway-api-gateway -n hermes-dev
+kubectl rollout status deployment/gateway-http-gateway -n hermes-dev
 
 # Rollback if needed
-kubectl rollout undo deployment/gateway-api-gateway -n hermes-dev
+kubectl rollout undo deployment/gateway-http-gateway -n hermes-dev
 ```
 
 ### Scaling
@@ -454,7 +454,7 @@ done
 kubectl exec -it <pod-name> -n hermes-dev -- /bin/sh
 
 # Port forward for local testing
-kubectl port-forward svc/gateway-api-gateway 8080:8080 -n hermes-dev
+kubectl port-forward svc/gateway-http-gateway 8080:8080 -n hermes-dev
 
 # Check DNS resolution
 kubectl run -it --rm debug --image=busybox --restart=Never -n hermes-dev -- nslookup auth-postgres
