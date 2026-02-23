@@ -11,6 +11,12 @@ management:
       enabled: true
     redis:
       enabled: true
+cognito:
+  userPoolId: "unused-in-dev"
+  clientId: "unused-in-dev"
+  clientSecret: "unused-in-dev"
+  domainUrl: "unused-in-dev"
+  region: "us-east-1"
 
 keycloak:
   server-url: ${KC_SERVER_URL}

@@ -23,6 +23,3 @@ docker volume prune -f
 
 echo "5. Wiping all old secrets.env files..."
 find . -name "secrets.env" -type f -delete
-
-echo "6. Regenerating fresh secrets..."
-"$SCRIPT_DIR/setup-secrets.sh"

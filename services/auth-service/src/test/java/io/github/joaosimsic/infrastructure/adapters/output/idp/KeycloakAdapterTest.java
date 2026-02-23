@@ -46,10 +46,10 @@ class KeycloakAdapterTest {
 
   @BeforeEach
   void setUp() {
-    keycloakProperties = new KeycloakProperties();
-    keycloakProperties.setServerUrl("http://localhost:8080");
-    keycloakProperties.setRealm("test-realm");
-    keycloakProperties.setClientId("test-client");
+    KeycloakProperties.Admin admin = new KeycloakProperties.Admin("admin-user", "admin-password");
+
+    keycloakProperties =
+        new KeycloakProperties("http://localhost:8080", "test-realm", "test-client", admin);
 
     keycloakAdapter = new KeycloakAdapter(keycloakAdminClient, keycloakProperties, cacheManager);
   }
@@ -155,10 +155,10 @@ class KeycloakAdapterTest {
 
       String result = keycloakAdapter.getGitHubAuthUrl(redirectUri, state);
 
-      assertTrue(result.contains(keycloakProperties.getServerUrl()));
-      assertTrue(result.contains("/realms/" + keycloakProperties.getRealm()));
+      assertTrue(result.contains(keycloakProperties.serverUrl()));
+      assertTrue(result.contains("/realms/" + keycloakProperties.realm()));
       assertTrue(result.contains("/protocol/openid-connect/auth"));
-      assertTrue(result.contains("client_id=" + keycloakProperties.getClientId()));
+      assertTrue(result.contains("client_id=" + keycloakProperties.clientId()));
       assertTrue(result.contains("redirect_uri=" + redirectUri));
       assertTrue(result.contains("state=" + state));
       assertTrue(result.contains("response_type=code"));

@@ -63,9 +63,9 @@ resilience4j:
 
 app:
   outbox:
-    poll-interval: 5000
-    batch-size: 20
-    max-attempts: 5
+    poll-interval: ${OUTBOX_POLL_INTERVAL}
+    batch-size: ${OUTBOX_BATCH_SIZE}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS}
 
 auth:
   cookie:

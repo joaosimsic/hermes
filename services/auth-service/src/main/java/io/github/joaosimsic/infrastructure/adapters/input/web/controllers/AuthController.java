@@ -152,20 +152,20 @@ public class AuthController {
     Cookie accessTokenCookie = new Cookie("access_token", tokens.getAccessToken());
 
     accessTokenCookie.setHttpOnly(true);
-    accessTokenCookie.setSecure(authProperties.getCookie().isSecure());
+    accessTokenCookie.setSecure(authProperties.cookie().secure());
     accessTokenCookie.setPath("/");
     accessTokenCookie.setMaxAge(tokens.getExpiresIn());
-    accessTokenCookie.setAttribute("SameSite", authProperties.getCookie().getSameSite());
+    accessTokenCookie.setAttribute("SameSite", authProperties.cookie().sameSite());
 
     response.addCookie(accessTokenCookie);
 
     Cookie refreshTokenCookie = new Cookie("refresh_token", tokens.getRefreshToken());
 
     refreshTokenCookie.setHttpOnly(true);
-    refreshTokenCookie.setSecure(authProperties.getCookie().isSecure());
+    refreshTokenCookie.setSecure(authProperties.cookie().secure());
     refreshTokenCookie.setPath("/api/auth");
     refreshTokenCookie.setMaxAge(tokens.getRefreshExpiresIn());
-    refreshTokenCookie.setAttribute("SameSite", authProperties.getCookie().getSameSite());
+    refreshTokenCookie.setAttribute("SameSite", authProperties.cookie().sameSite());
 
     response.addCookie(refreshTokenCookie);
   }
@@ -174,7 +174,7 @@ public class AuthController {
     Cookie accessTokenCookie = new Cookie("access_token", "");
 
     accessTokenCookie.setHttpOnly(true);
-    accessTokenCookie.setSecure(authProperties.getCookie().isSecure());
+    accessTokenCookie.setSecure(authProperties.cookie().secure());
     accessTokenCookie.setPath("/");
     accessTokenCookie.setMaxAge(0);
 
@@ -183,7 +183,7 @@ public class AuthController {
     Cookie refreshTokenCookie = new Cookie("refresh_token", "");
 
     refreshTokenCookie.setHttpOnly(true);
-    refreshTokenCookie.setSecure(authProperties.getCookie().isSecure());
+    refreshTokenCookie.setSecure(authProperties.cookie().secure());
     refreshTokenCookie.setPath("/api/auth");
     refreshTokenCookie.setMaxAge(0);
 

@@ -42,285 +42,296 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequiredArgsConstructor
 public class KeycloakAdapter implements AuthPort {
 
-    private final Keycloak keycloakAdminClient;
-    private final KeycloakProperties keycloakProperties;
-    private final CacheManager cacheManager;
-    private final WebClient webClient = WebClient.builder().build();
+  private final Keycloak keycloakAdminClient;
+  private final KeycloakProperties keycloakProperties;
+  private final CacheManager cacheManager;
+  private final WebClient webClient = WebClient.builder().build();
 
-    @Override
-    public AuthUser createUser(String name, String email, String password) {
-        RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.getRealm());
-        UsersResource usersResource = realmResource.users();
+  @Override
+  public AuthUser createUser(String name, String email, String password) {
+    RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.realm());
+    UsersResource usersResource = realmResource.users();
 
-        UserRepresentation user = new UserRepresentation();
-        user.setUsername(email);
-        user.setEmail(email);
-        user.setEnabled(true);
-        user.setEmailVerified(true);
-        user.setRequiredActions(Collections.emptyList());
-        user.singleAttribute("name", name);
+    UserRepresentation user = new UserRepresentation();
+    user.setUsername(email);
+    user.setEmail(email);
+    user.setEnabled(true);
+    user.setEmailVerified(true);
+    user.setRequiredActions(Collections.emptyList());
+    user.singleAttribute("name", name);
 
-        CredentialRepresentation credential = new CredentialRepresentation();
-        credential.setType(CredentialRepresentation.PASSWORD);
-        credential.setValue(password);
-        credential.setTemporary(false);
-        user.setCredentials(Collections.singletonList(credential));
+    CredentialRepresentation credential = new CredentialRepresentation();
+    credential.setType(CredentialRepresentation.PASSWORD);
+    credential.setValue(password);
+    credential.setTemporary(false);
+    user.setCredentials(Collections.singletonList(credential));
 
-        try (Response response = usersResource.create(user)) {
-            if (response.getStatus() == 409) {
-                throw new UserAlreadyExistsException("User with email " + email + " already exists");
-            }
+    try (Response response = usersResource.create(user)) {
+      if (response.getStatus() == 409) {
+        throw new UserAlreadyExistsException("User with email " + email + " already exists");
+      }
 
-            if (response.getStatus() == 201) {
-                String userId = extractUserIdFromLocation(response);
-                log.info("User created successfully in Keycloak with ID: {}", userId);
-                return AuthUser.builder().id(userId).email(email).name(name).emailVerified(true).build();
-            }
+      if (response.getStatus() == 201) {
+        String userId = extractUserIdFromLocation(response);
+        log.info("User created successfully in Keycloak with ID: {}", userId);
+        return AuthUser.builder().id(userId).email(email).name(name).emailVerified(true).build();
+      }
 
-            String errorBody = response.readEntity(String.class);
-            log.error("Failed to create user in Keycloak. Status: {}, Body: {}", response.getStatus(), errorBody);
-            throw new AuthenticationException("Failed to create user: " + errorBody);
-        }
+      String errorBody = response.readEntity(String.class);
+      log.error(
+          "Failed to create user in Keycloak. Status: {}, Body: {}",
+          response.getStatus(),
+          errorBody);
+      throw new AuthenticationException("Failed to create user: " + errorBody);
     }
+  }
 
-    @Override
-    public AuthTokens login(String email, String password) {
-        String tokenUrl = getOidcEndpoint("token");
+  @Override
+  public AuthTokens login(String email, String password) {
+    String tokenUrl = getOidcEndpoint("token");
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "password");
-        formData.add("client_id", keycloakProperties.getClientId());
-        formData.add("username", email);
-        formData.add("password", password);
-        formData.add("scope", "openid email profile");
+    MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+    formData.add("grant_type", "password");
+    formData.add("client_id", keycloakProperties.clientId());
+    formData.add("username", email);
+    formData.add("password", password);
+    formData.add("scope", "openid email profile");
 
-        try {
-            Map<String, Object> response = webClient.post()
-                    .uri(tokenUrl)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                    .body(BodyInserters.fromFormData(formData))
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
+    try {
+      Map<String, Object> response =
+          webClient
+              .post()
+              .uri(tokenUrl)
+              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+              .body(BodyInserters.fromFormData(formData))
+              .retrieve()
+              .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+              .block();
 
-            return mapToAuthTokens(response);
-        } catch (WebClientResponseException e) {
-            log.error("Login failed for user: {}. Status: {}", email, e.getStatusCode());
-            throw new AuthenticationException("Invalid credentials");
-        }
+      return mapToAuthTokens(response);
+    } catch (WebClientResponseException e) {
+      log.error("Login failed for user: {}. Status: {}", email, e.getStatusCode());
+      throw new AuthenticationException("Invalid credentials");
     }
+  }
 
-    @Override
-    public AuthTokens refreshToken(String refreshToken) {
-        String tokenUrl = getOidcEndpoint("token");
+  @Override
+  public AuthTokens refreshToken(String refreshToken) {
+    String tokenUrl = getOidcEndpoint("token");
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "refresh_token");
-        formData.add("client_id", keycloakProperties.getClientId());
-        formData.add("refresh_token", refreshToken);
+    MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+    formData.add("grant_type", "refresh_token");
+    formData.add("client_id", keycloakProperties.clientId());
+    formData.add("refresh_token", refreshToken);
 
-        try {
-            Map<String, Object> response = webClient.post()
-                    .uri(tokenUrl)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                    .body(BodyInserters.fromFormData(formData))
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
+    try {
+      Map<String, Object> response =
+          webClient
+              .post()
+              .uri(tokenUrl)
+              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+              .body(BodyInserters.fromFormData(formData))
+              .retrieve()
+              .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+              .block();
 
-            return mapToAuthTokens(response);
-        } catch (WebClientResponseException e) {
-            log.error("Token refresh failed. Status: {}", e.getStatusCode());
-            throw new AuthenticationException("Failed to refresh token");
-        }
+      return mapToAuthTokens(response);
+    } catch (WebClientResponseException e) {
+      log.error("Token refresh failed. Status: {}", e.getStatusCode());
+      throw new AuthenticationException("Failed to refresh token");
     }
+  }
 
-    @Override
-    public void logout(String accessToken) {
-        String revokeUrl = getOidcEndpoint("revoke");
+  @Override
+  public void logout(String accessToken) {
+    String revokeUrl = getOidcEndpoint("revoke");
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("client_id", keycloakProperties.getClientId());
-        formData.add("token", accessToken);
-        formData.add("token_type_hint", "access_token");
+    MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+    formData.add("client_id", keycloakProperties.clientId());
+    formData.add("token", accessToken);
+    formData.add("token_type_hint", "access_token");
 
-        try {
-            webClient.post()
-                    .uri(revokeUrl)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                    .body(BodyInserters.fromFormData(formData))
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
+    try {
+      webClient
+          .post()
+          .uri(revokeUrl)
+          .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+          .body(BodyInserters.fromFormData(formData))
+          .retrieve()
+          .toBodilessEntity()
+          .block();
 
-            log.info("User logged out successfully");
-        } catch (WebClientResponseException e) {
-            log.warn("Logout request failed. Status: {}", e.getStatusCode());
-        }
+      log.info("User logged out successfully");
+    } catch (WebClientResponseException e) {
+      log.warn("Logout request failed. Status: {}", e.getStatusCode());
     }
+  }
 
-    @Override
-    @CircuitBreaker(name = "authProvider")
-    @Retryable(
-        retryFor = {WebClientResponseException.class, Exception.class},
-        maxAttemptsExpression = "${app.idp.retry.max-attempts:3}",
-        backoff = @Backoff(delayExpression = "${app.idp.retry.initial-backoff-ms:1000}"))
-    @Cacheable(value = "authUsers", key = "#accessToken", unless = "#result == null")
-    public AuthUser getUserInfo(String accessToken) {
-        String userInfoUrl = getOidcEndpoint("userinfo");
+  @Override
+  @CircuitBreaker(name = "authProvider")
+  @Retryable(
+      retryFor = {WebClientResponseException.class, Exception.class},
+      maxAttemptsExpression = "${app.idp.retry.max-attempts:3}",
+      backoff = @Backoff(delayExpression = "${app.idp.retry.initial-backoff-ms:1000}"))
+  @Cacheable(value = "authUsers", key = "#accessToken", unless = "#result == null")
+  public AuthUser getUserInfo(String accessToken) {
+    String userInfoUrl = getOidcEndpoint("userinfo");
 
-        try {
-            Map<String, Object> response = webClient.get()
-                    .uri(userInfoUrl)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
+    try {
+      Map<String, Object> response =
+          webClient
+              .get()
+              .uri(userInfoUrl)
+              .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+              .retrieve()
+              .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+              .block();
 
-            return AuthUser.builder()
-                    .id((String) response.get("sub"))
-                    .email((String) response.get("email"))
-                    .name((String) response.get("name"))
-                    .emailVerified(Boolean.TRUE.equals(response.get("email_verified")))
-                    .build();
-        } catch (WebClientResponseException e) {
-            log.error("Failed to get user info. Status: {}", e.getStatusCode());
-            throw e;
-        }
+      return AuthUser.builder()
+          .id((String) response.get("sub"))
+          .email((String) response.get("email"))
+          .name((String) response.get("name"))
+          .emailVerified(Boolean.TRUE.equals(response.get("email_verified")))
+          .build();
+    } catch (WebClientResponseException e) {
+      log.error("Failed to get user info. Status: {}", e.getStatusCode());
+      throw e;
     }
+  }
 
-    @Recover
-    public AuthUser recoverUserInfo(Exception e, String accessToken) {
-        log.warn("Keycloak unreachable. Falling back to cache for token. Error: {}", e.getMessage());
-        return getFromCache("authUsers", accessToken, AuthUser.class);
+  @Recover
+  public AuthUser recoverUserInfo(Exception e, String accessToken) {
+    log.warn("Keycloak unreachable. Falling back to cache for token. Error: {}", e.getMessage());
+    return getFromCache("authUsers", accessToken, AuthUser.class);
+  }
+
+  @Override
+  @CacheEvict(value = "authUsers", allEntries = true)
+  public void updateEmail(String userId, String newEmail) {
+    log.info("Updating email for user {} in Keycloak", userId);
+
+    RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.realm());
+    UsersResource usersResource = realmResource.users();
+
+    try {
+      UserRepresentation user = usersResource.get(userId).toRepresentation();
+      user.setEmail(newEmail);
+      user.setUsername(newEmail);
+
+      usersResource.get(userId).update(user);
+      log.info("Email updated successfully for user {} in Keycloak", userId);
+    } catch (Exception e) {
+      log.error("Failed to update email for user {} in Keycloak: {}", userId, e.getMessage());
+      throw new AuthenticationException("Failed to update email: " + e.getMessage());
     }
+  }
 
-    @Override
-    @CacheEvict(value = "authUsers", allEntries = true)
-    public void updateEmail(String userId, String newEmail) {
-        log.info("Updating email for user {} in Keycloak", userId);
+  @Override
+  @CacheEvict(value = "authUsers", allEntries = true)
+  public void updatePassword(String userId, String currentPassword, String newPassword) {
+    log.info("Updating password for user {} in Keycloak", userId);
 
-        RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.getRealm());
-        UsersResource usersResource = realmResource.users();
+    RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.realm());
+    UsersResource usersResource = realmResource.users();
 
-        try {
-            UserRepresentation user = usersResource.get(userId).toRepresentation();
-            user.setEmail(newEmail);
-            user.setUsername(newEmail);
+    try {
+      UserRepresentation user = usersResource.get(userId).toRepresentation();
+      verifyCurrentPassword(user.getEmail(), currentPassword);
 
-            usersResource.get(userId).update(user);
-            log.info("Email updated successfully for user {} in Keycloak", userId);
-        } catch (Exception e) {
-            log.error("Failed to update email for user {} in Keycloak: {}", userId, e.getMessage());
-            throw new AuthenticationException("Failed to update email: " + e.getMessage());
-        }
+      CredentialRepresentation credential = new CredentialRepresentation();
+      credential.setType(CredentialRepresentation.PASSWORD);
+      credential.setValue(newPassword);
+      credential.setTemporary(false);
+
+      usersResource.get(userId).resetPassword(credential);
+      log.info("Password updated successfully for user {} in Keycloak", userId);
+    } catch (AuthenticationException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Failed to update password for user {} in Keycloak: {}", userId, e.getMessage());
+      throw new AuthenticationException("Failed to update password: " + e.getMessage());
     }
+  }
 
-    @Override
-    @CacheEvict(value = "authUsers", allEntries = true)
-    public void updatePassword(String userId, String currentPassword, String newPassword) {
-        log.info("Updating password for user {} in Keycloak", userId);
+  @Override
+  public String getGitHubAuthUrl(String redirectUri, String state) {
+    return UriComponentsBuilder.fromUriString(keycloakProperties.serverUrl())
+        .path("/realms/" + keycloakProperties.realm() + "/protocol/openid-connect/auth")
+        .queryParam("client_id", keycloakProperties.clientId())
+        .queryParam("redirect_uri", redirectUri)
+        .queryParam("response_type", "code")
+        .queryParam("scope", "openid email profile")
+        .queryParam("kc_idp_hint", "github")
+        .queryParam("state", state)
+        .toUriString();
+  }
 
-        RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.getRealm());
-        UsersResource usersResource = realmResource.users();
+  @Override
+  public AuthTokens exchangeCodeForTokens(String code, String redirectUri) {
+    String tokenUrl = getOidcEndpoint("token");
 
-        try {
-            UserRepresentation user = usersResource.get(userId).toRepresentation();
-            verifyCurrentPassword(user.getEmail(), currentPassword);
+    MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+    formData.add("grant_type", "authorization_code");
+    formData.add("client_id", keycloakProperties.clientId());
+    formData.add("code", code);
+    formData.add("redirect_uri", redirectUri);
 
-            CredentialRepresentation credential = new CredentialRepresentation();
-            credential.setType(CredentialRepresentation.PASSWORD);
-            credential.setValue(newPassword);
-            credential.setTemporary(false);
+    try {
+      Map<String, Object> response =
+          webClient
+              .post()
+              .uri(tokenUrl)
+              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+              .body(BodyInserters.fromFormData(formData))
+              .retrieve()
+              .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+              .block();
 
-            usersResource.get(userId).resetPassword(credential);
-            log.info("Password updated successfully for user {} in Keycloak", userId);
-        } catch (AuthenticationException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Failed to update password for user {} in Keycloak: {}", userId, e.getMessage());
-            throw new AuthenticationException("Failed to update password: " + e.getMessage());
-        }
+      return mapToAuthTokens(response);
+    } catch (WebClientResponseException e) {
+      log.error("Code exchange failed. Status: {}", e.getStatusCode());
+      throw new AuthenticationException("Failed to exchange authorization code");
     }
+  }
 
-    @Override
-    public String getGitHubAuthUrl(String redirectUri, String state) {
-        return UriComponentsBuilder.fromUriString(keycloakProperties.getServerUrl())
-                .path("/realms/" + keycloakProperties.getRealm() + "/protocol/openid-connect/auth")
-                .queryParam("client_id", keycloakProperties.getClientId())
-                .queryParam("redirect_uri", redirectUri)
-                .queryParam("response_type", "code")
-                .queryParam("scope", "openid email profile")
-                .queryParam("kc_idp_hint", "github")
-                .queryParam("state", state)
-                .toUriString();
+  private String getOidcEndpoint(String endpoint) {
+    return String.format(
+        "%s/realms/%s/protocol/openid-connect/%s",
+        keycloakProperties.serverUrl(), keycloakProperties.realm(), endpoint);
+  }
+
+  private void verifyCurrentPassword(String email, String currentPassword) {
+    try {
+      login(email, currentPassword);
+    } catch (AuthenticationException e) {
+      throw new AuthenticationException("Current password is incorrect");
     }
+  }
 
-    @Override
-    public AuthTokens exchangeCodeForTokens(String code, String redirectUri) {
-        String tokenUrl = getOidcEndpoint("token");
-
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "authorization_code");
-        formData.add("client_id", keycloakProperties.getClientId());
-        formData.add("code", code);
-        formData.add("redirect_uri", redirectUri);
-
-        try {
-            Map<String, Object> response = webClient.post()
-                    .uri(tokenUrl)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                    .body(BodyInserters.fromFormData(formData))
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
-
-            return mapToAuthTokens(response);
-        } catch (WebClientResponseException e) {
-            log.error("Code exchange failed. Status: {}", e.getStatusCode());
-            throw new AuthenticationException("Failed to exchange authorization code");
-        }
+  private <T> T getFromCache(String cacheName, Object key, Class<T> type) {
+    Cache cache = cacheManager.getCache(cacheName);
+    if (cache == null) {
+      log.warn("No cache found for {}, returning null", cacheName);
+      return null;
     }
+    return cache.get(key, type);
+  }
 
-    private String getOidcEndpoint(String endpoint) {
-        return String.format("%s/realms/%s/protocol/openid-connect/%s",
-                keycloakProperties.getServerUrl(),
-                keycloakProperties.getRealm(),
-                endpoint);
+  private String extractUserIdFromLocation(Response response) {
+    String location = response.getHeaderString("Location");
+    if (location == null || !location.contains("/")) {
+      throw new AuthenticationException("Could not extract user ID from response");
     }
+    return location.substring(location.lastIndexOf("/") + 1);
+  }
 
-    private void verifyCurrentPassword(String email, String currentPassword) {
-        try {
-            login(email, currentPassword);
-        } catch (AuthenticationException e) {
-            throw new AuthenticationException("Current password is incorrect");
-        }
-    }
-
-    private <T> T getFromCache(String cacheName, Object key, Class<T> type) {
-        Cache cache = cacheManager.getCache(cacheName);
-        if (cache == null) {
-            log.warn("No cache found for {}, returning null", cacheName);
-            return null;
-        }
-        return cache.get(key, type);
-    }
-
-    private String extractUserIdFromLocation(Response response) {
-        String location = response.getHeaderString("Location");
-        if (location == null || !location.contains("/")) {
-            throw new AuthenticationException("Could not extract user ID from response");
-        }
-        return location.substring(location.lastIndexOf("/") + 1);
-    }
-
-    private AuthTokens mapToAuthTokens(Map<String, Object> response) {
-        return AuthTokens.builder()
-                .accessToken((String) response.get("access_token"))
-                .refreshToken((String) response.get("refresh_token"))
-                .idToken((String) response.get("id_token"))
-                .expiresIn((Integer) response.get("expires_in"))
-                .refreshExpiresIn((Integer) response.get("refresh_expires_in"))
-                .build();
-    }
+  private AuthTokens mapToAuthTokens(Map<String, Object> response) {
+    return AuthTokens.builder()
+        .accessToken((String) response.get("access_token"))
+        .refreshToken((String) response.get("refresh_token"))
+        .idToken((String) response.get("id_token"))
+        .expiresIn((Integer) response.get("expires_in"))
+        .refreshExpiresIn((Integer) response.get("refresh_expires_in"))
+        .build();
+  }
 }
