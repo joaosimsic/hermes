@@ -56,7 +56,7 @@ public class KeycloakAdapter implements AuthPort {
     user.setUsername(email);
     user.setEmail(email);
     user.setEnabled(true);
-    user.setEmailVerified(true);
+    user.setEmailVerified(false);
     user.setRequiredActions(Collections.emptyList());
     user.singleAttribute("name", name);
 
