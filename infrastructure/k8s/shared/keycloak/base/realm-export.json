@@ -116,7 +116,7 @@
     {
       "username": "test@example.com",
       "email": "test@example.com",
-      "emailVerified": true,
+      "emailVerified": false,
       "enabled": true,
       "firstName": "Test",
       "lastName": "User",

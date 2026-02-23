@@ -1,5 +1,6 @@
 package io.github.joaosimsic.infrastructure.adapters.output.idp;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -79,7 +80,7 @@ class CognitoAdapterTest {
                   AttributeType.builder().name("sub").value("user-uuid-123").build(),
                   AttributeType.builder().name("email").value(email).build(),
                   AttributeType.builder().name("name").value(name).build(),
-                  AttributeType.builder().name("email_verified").value("true").build())
+                  AttributeType.builder().name("email_verified").value("false").build())
               .build();
 
       AdminCreateUserResponse createResponse =
@@ -132,7 +133,7 @@ class CognitoAdapterTest {
           attributes.stream().anyMatch(a -> a.name().equals("name") && a.value().equals(name)));
       assertTrue(
           attributes.stream()
-              .anyMatch(a -> a.name().equals("email_verified") && a.value().equals("true")));
+              .anyMatch(a -> a.name().equals("email_verified") && a.value().equals("false")));
     }
 
     @Test
@@ -291,7 +292,7 @@ class CognitoAdapterTest {
                   AttributeType.builder().name("sub").value("user-123").build(),
                   AttributeType.builder().name("email").value("john@example.com").build(),
                   AttributeType.builder().name("name").value("John Doe").build(),
-                  AttributeType.builder().name("email_verified").value("true").build())
+                  AttributeType.builder().name("email_verified").value("false").build())
               .build();
 
       when(cognitoClient.getUser(any(GetUserRequest.class))).thenReturn(getUserResponse);
@@ -302,7 +303,7 @@ class CognitoAdapterTest {
       assertEquals("user-123", result.getId());
       assertEquals("john@example.com", result.getEmail());
       assertEquals("John Doe", result.getName());
-      assertTrue(result.isEmailVerified());
+      assertFalse(result.isEmailVerified());
     }
   }
 

@@ -52,7 +52,7 @@ public class CognitoAdapter implements AuthPort {
               .userAttributes(
                   AttributeType.builder().name("email").value(email).build(),
                   AttributeType.builder().name("name").value(name).build(),
-                  AttributeType.builder().name("email_verified").value("true").build())
+                  AttributeType.builder().name("email_verified").value("false").build())
               .temporaryPassword(password)
               .messageAction(MessageActionType.SUPPRESS)
               .build();

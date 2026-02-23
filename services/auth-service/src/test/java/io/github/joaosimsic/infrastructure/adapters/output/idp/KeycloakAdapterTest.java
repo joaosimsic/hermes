@@ -1,5 +1,6 @@
 package io.github.joaosimsic.infrastructure.adapters.output.idp;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -110,7 +111,7 @@ class KeycloakAdapterTest {
       assertEquals(email, capturedUser.getUsername());
       assertEquals(email, capturedUser.getEmail());
       assertTrue(capturedUser.isEnabled());
-      assertTrue(capturedUser.isEmailVerified());
+      assertFalse(capturedUser.isEmailVerified());
       assertEquals(Collections.emptyList(), capturedUser.getRequiredActions());
       assertEquals(name, capturedUser.getAttributes().get("name").get(0));
 
