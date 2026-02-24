@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../shared/rabbitmq/overlays/dev
+  - ../../shared/nats/overlays/dev
   - ../../shared/keycloak/overlays/dev
   - ../../shared/ingress/overlays/dev
 
