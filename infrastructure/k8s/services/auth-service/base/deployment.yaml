@@ -45,6 +45,17 @@ spec:
             sleep 2
           done
           echo "Redis is ready!"
+      - name: wait-for-keycloak
+        image: curlimages/curl:8.5.0
+        command:
+          - sh
+          - -c
+          - |
+            until curl -s -f -o /dev/null http://keycloak:8180/realms/hermes; do
+              echo "Waiting for Keycloak to respond at http://keycloak:8180/realms/hermes..."
+              sleep 5
+            done
+            echo "Keycloak is ready!"
       containers:
       - name: auth-service
         image: auth-service:latest

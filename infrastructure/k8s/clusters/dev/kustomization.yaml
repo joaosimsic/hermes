@@ -9,6 +9,7 @@ resources:
   - ../../services/auth-service/overlays/dev
   - ../../services/user-service/overlays/dev
   - ../../gateways/http-gateway/overlays/dev
+  - ../../gateways/ws-gateway/overlays/dev
 
 namespace: hermes-dev
 

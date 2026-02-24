@@ -19,6 +19,7 @@ spec:
       containers:
       - name: ws-gateway
         image: ws-gateway:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http
