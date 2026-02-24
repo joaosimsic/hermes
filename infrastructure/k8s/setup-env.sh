@@ -137,4 +137,19 @@ KC_VARS=(
 )
 generate_files "shared/keycloak/overlays/$ENV" "${KC_VARS[@]}"
 
+WS_GATEWAY_VARS=(
+    "GATEWAY_PORT" "GATEWAY_PROFILE" "NATS_URL" "LOG_LEVEL" "FRONTEND_URL"
+    "JWKS_CACHE_TTL" "CHAT_SERVICE_URL"
+)
+WS_GATEWAY_DEV_VARS=("KC_JWKS_URL" "KC_JWT_ISSUER")
+WS_GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_ORIGINS")
+
+if [[ "$ENV" == "dev" ]]; then
+    generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}" "${WS_GATEWAY_DEV_VARS[@]}"
+elif [[ "$ENV" == "prod" ]]; then
+    generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}" "${WS_GATEWAY_PROD_VARS[@]}"
+else
+    generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}"
+fi
+
 echo -e "\n${GREEN}All files synchronized with .env and validated.${NC}"

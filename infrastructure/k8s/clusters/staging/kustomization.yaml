@@ -9,6 +9,7 @@ resources:
 - ../../services/auth-service/overlays/staging
 - ../../services/user-service/overlays/staging
 - ../../gateways/http-gateway/overlays/staging
+- ../../gateways/ws-gateway/overlays/staging
 
 namespace: hermes-staging
 labels:

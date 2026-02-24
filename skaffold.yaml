@@ -33,6 +33,11 @@ build:
           - src: 'services/user-service/src/main/resources/**/*'
             dest: /app/resources
 
+    - image: ws-gateway
+      context: gateways/ws-gateway
+      docker:
+        dockerfile: Dockerfile
+
 manifests:
   kustomize:
     paths:
@@ -134,3 +139,4 @@ profiles:
         - image: http-gateway
         - image: auth-service
         - image: user-service
+        - image: ws-gateway
