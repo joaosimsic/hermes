@@ -39,8 +39,8 @@ func main() {
 	defer natsClient.Close()
 
 	jwtValidator := jwt.NewValidator(
-		cfg.JwksURL,
-		cfg.JwtIssuer,
+		cfg.GetJwksURL(),
+		cfg.GetJwtIssuer(),
 		time.Duration(cfg.JwksCacheTTL)*time.Second,
 	)
 

@@ -35,7 +35,7 @@ func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v *jwt.Validator, l *za
 
 				origin := r.Header.Get("Origin")
 
-				return origin == cfg.AllowedOrigin
+				return origin == cfg.GetAllowedOrigin()
 			},
 		},
 	}
