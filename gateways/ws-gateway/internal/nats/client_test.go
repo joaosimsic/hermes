@@ -14,7 +14,7 @@ import (
 
 func runTestServer() *server.Server {
 	opts := natsserver.DefaultTestOptions
-	opts.Port = -1 // Use a random port
+	opts.Port = -1
 	return natsserver.RunServer(&opts)
 }
 
@@ -32,7 +32,10 @@ func TestNATSClient_Integration(t *testing.T) {
 	t.Run("PublishMessage", func(t *testing.T) {
 		sub, err := client.conn.Subscribe(SubjectSendMessage, func(m *nats.Msg) {
 			var p map[string]any
-			json.Unmarshal(m.Data, &p)
+			if err := json.Unmarshal(m.Data, &p); err != nil {
+				t.Errorf("failed to unmarshal message: %v", err)
+				return
+			}
 			if p["content"] != "hello" {
 				t.Errorf("expected content hello, got %v", p["content"])
 			}
@@ -40,7 +43,11 @@ func TestNATSClient_Integration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer sub.Unsubscribe()
+		defer func() {
+			if err := sub.Unsubscribe(); err != nil {
+				t.Logf("failed to unsubscribe: %v", err)
+			}
+		}()
 
 		payload := &protocol.SendMessagePayload{
 			ConversationID: "conv_1",
@@ -68,7 +75,9 @@ func TestNATSClient_Integration(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		client.PublishPresence("user_1", "online")
+		if err := client.PublishPresence("user_1", "online"); err != nil {
+			t.Errorf("PublishPresence failed: %v", err)
+		}
 
 		select {
 		case <-done:
