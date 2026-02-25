@@ -49,6 +49,8 @@ func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v TokenValidator, l *za
 func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	traceID, _ := r.Context().Value(TraceIDKey).(string)
 
+	w.Header().Set(TraceIDHeader, traceID)
+
 	h.logger.Debug("WebSocket connection attempt",
 		zap.String("cookie_header", r.Header.Get("Cookie")),
 		zap.Any("cookies", r.Cookies()),

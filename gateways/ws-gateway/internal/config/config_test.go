@@ -12,9 +12,10 @@ func TestLoad(t *testing.T) {
 			"LOG_LEVEL", "CHAT_SERVICE_URL", "GATEWAY_PROFILE",
 			"KC_JWKS_URL", "KC_JWT_ISSUER", "COGNITO_JWKS_URL",
 			"COGNITO_JWT_ISSUER", "CORS_ALLOWED_ORIGINS",
+			"RATE_LIMIT_AUTHENTICATED", "RATE_LIMIT_AUTHENTICATED_BURST",
 		}
 		for _, e := range envs {
-			_ = os.Unsetenv(e) 
+			_ = os.Unsetenv(e)
 		}
 	}
 
@@ -29,6 +30,8 @@ func TestLoad(t *testing.T) {
 		setEnv(t, "GATEWAY_PROFILE", "dev")
 		setEnv(t, "KC_JWKS_URL", "http://keycloak/jwks")
 		setEnv(t, "KC_JWT_ISSUER", "my-issuer")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED", "100")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED_BURST", "150")
 
 		cfg, err := Load()
 		if err != nil {

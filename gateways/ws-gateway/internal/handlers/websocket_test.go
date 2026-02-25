@@ -141,3 +141,29 @@ func TestWebSocketHandler_ServeHTTP(t *testing.T) {
 		}
 	})
 }
+
+func TestWebSocketHandler_TraceIDPropagation(t *testing.T) {
+	logger := zap.NewNop()
+	cfg := &config.Config{Profile: "dev", RateLimitAuthenticated: 100, RateLimitAuthenticatedBurst: 150}
+	myHub := hub.NewHub(&MockNats{}, logger)
+	mockV := &MockValidator{shouldSucceed: true}
+	handler := NewWebSocketHandler(cfg, myHub, mockV, logger)
+
+	t.Run("Propagates Trace ID from Context to Header", func(t *testing.T) {
+		expectedTraceID := "test-trace-123"
+
+		req := httptest.NewRequest("GET", "/ws", nil)
+		ctx := context.WithValue(req.Context(), TraceIDKey, expectedTraceID)
+		req = req.WithContext(ctx)
+		req.Header.Set("Sec-WebSocket-Protocol", "bearer.valid_token")
+
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		gotTraceHeader := rr.Header().Get(TraceIDHeader)
+		if gotTraceHeader != expectedTraceID {
+			t.Errorf("Expected response header %s to be %s, got %s", TraceIDHeader, expectedTraceID, gotTraceHeader)
+		}
+	})
+}
