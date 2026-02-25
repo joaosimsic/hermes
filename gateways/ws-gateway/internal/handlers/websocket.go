@@ -47,6 +47,8 @@ func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v TokenValidator, l *za
 }
 
 func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	traceID, _ := r.Context().Value(TraceIDKey).(string)
+
 	h.logger.Debug("WebSocket connection attempt",
 		zap.String("cookie_header", r.Header.Get("Cookie")),
 		zap.Any("cookies", r.Cookies()),
@@ -63,10 +65,10 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := h.validator.Validate(r.Context(), token)
 	if err != nil {
-		h.logger.Warn("JWT validation failed", zap.Error(err))
-
+		h.logger.Warn("JWT validation failed",
+			zap.String("trace_id", traceID),
+			zap.Error(err))
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-
 		return
 	}
 
@@ -74,16 +76,18 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if protocols := websocket.Subprotocols(r); len(protocols) > 0 {
 		responseHeader = http.Header{}
 		responseHeader.Set("Sec-WebSocket-Protocol", protocols[0])
+		responseHeader.Set(TraceIDHeader, traceID)
 	}
 
 	conn, err := h.upgrader.Upgrade(w, r, responseHeader)
 	if err != nil {
-		h.logger.Error("WebSocket upgrade failed", zap.Error(err))
-
+		h.logger.Error("WebSocket upgrade failed",
+			zap.String("trace_id", traceID),
+			zap.Error(err))
 		return
 	}
 
-	client := hub.NewClient(h.hub, conn, claims.Subject, claims.Email, h.logger)
+	client := hub.NewClient(h.hub, conn, claims.Subject, claims.Email, traceID, h.logger)
 	h.hub.Register(client)
 
 	go client.WritePump()
