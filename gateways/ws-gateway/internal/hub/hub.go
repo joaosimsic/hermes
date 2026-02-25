@@ -3,21 +3,28 @@ package hub
 import (
 	"sync"
 
-	"github.com/joaosimsic/hermes/ws-gateway/internal/nats"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
 	"go.uber.org/zap"
 )
+
+type Publisher interface {
+	PublishMessage(senderID string, msg *protocol.SendMessagePayload) error
+	PublishTyping(userID, conversationID string) error
+	PublishMarkRead(userID, conversationID, messageID string) error
+	PublishPresence(userID, status string) error
+	PublishUserOnline(userID string) error
+}
 
 type Hub struct {
 	clients    map[string]*Client
 	register   chan *Client
 	unregister chan *Client
-	nats       *nats.Client
+	nats       Publisher
 	logger     *zap.Logger
 	mu         sync.RWMutex
 }
 
-func NewHub(natsClient *nats.Client, logger *zap.Logger) *Hub {
+func NewHub(natsClient Publisher, logger *zap.Logger) *Hub {
 	return &Hub{
 		clients:    make(map[string]*Client),
 		register:   make(chan *Client),

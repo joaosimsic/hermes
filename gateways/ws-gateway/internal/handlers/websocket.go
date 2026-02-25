@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -11,15 +12,19 @@ import (
 	"go.uber.org/zap"
 )
 
+type TokenValidator interface {
+	Validate(ctx context.Context, token string) (*jwt.Claims, error)
+}
+
 type WebSocketHandler struct {
 	cfg       *config.Config
 	hub       *hub.Hub
-	validator *jwt.Validator
+	validator TokenValidator
 	logger    *zap.Logger
 	upgrader  websocket.Upgrader
 }
 
-func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v *jwt.Validator, l *zap.Logger) *WebSocketHandler {
+func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v TokenValidator, l *zap.Logger) *WebSocketHandler {
 	return &WebSocketHandler{
 		cfg:       cfg,
 		hub:       h,
