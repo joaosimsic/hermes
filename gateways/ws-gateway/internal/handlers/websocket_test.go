@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	jwtlib "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
@@ -108,7 +109,16 @@ func TestWebSocketHandler_ServeHTTP(t *testing.T) {
 		}
 		defer func() { _ = conn.Close() }()
 
-		if !myHub.IsOnline("user_123") {
+		success := false
+		for range 10 {
+			if myHub.IsOnline("user_123") {
+				success = true
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		if !success {
 			t.Error("User should be registered in Hub after successful connection")
 		}
 	})
