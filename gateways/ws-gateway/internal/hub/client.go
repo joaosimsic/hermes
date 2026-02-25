@@ -71,6 +71,12 @@ func (c *Client) ReadPump() {
 			break
 		}
 
+		if !c.limiter.Allow() {
+			c.logger.Warn("rate limit exceeded, dropping message")
+			c.sendError("RATE_LIMIT_EXCEEDED", "Too many messages")
+			continue
+		}
+
 		var envelope protocol.Envelope
 		if err := json.Unmarshal(message, &envelope); err != nil {
 			c.sendError("INVALID_MESSAGE", "Invalid message format")

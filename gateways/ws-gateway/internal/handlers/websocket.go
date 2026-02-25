@@ -53,6 +53,7 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		zap.String("cookie_header", r.Header.Get("Cookie")),
 		zap.Any("cookies", r.Cookies()),
 		zap.String("protocols", r.Header.Get("Sec-WebSocket-Protocol")),
+		zap.String("trace_id", traceID),
 	)
 
 	token := h.extractToken(r)
