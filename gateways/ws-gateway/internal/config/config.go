@@ -14,6 +14,9 @@ type Config struct {
 	ChatServiceURL string `envconfig:"CHAT_SERVICE_URL" required:"true"`
 	Profile        string `envconfig:"GATEWAY_PROFILE" required:"true"`
 
+	RateLimitAuthenticated      int `envconfig:"RATE_LIMIT_AUTHENTICATED" required:"true"`
+	RateLimitAuthenticatedBurst int `envconfig:"RATE_LIMIT_AUTHENTICATED_BURST" required:"true"`
+
 	KcJwksURL   string `envconfig:"KC_JWKS_URL"`
 	KcJwtIssuer string `envconfig:"KC_JWT_ISSUER"`
 

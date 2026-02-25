@@ -87,7 +87,7 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := hub.NewClient(h.hub, conn, claims.Subject, claims.Email, traceID, h.logger)
+	client := hub.NewClient(h.hub, conn, claims.Subject, claims.Email, traceID, h.cfg.RateLimitAuthenticated, h.cfg.RateLimitAuthenticatedBurst, h.logger)
 	h.hub.Register(client)
 
 	go client.WritePump()

@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -23,20 +24,24 @@ type Client struct {
 	send      chan []byte
 	userID    string
 	email     string
+	traceID   string
 	logger    *zap.Logger
 	mu        sync.Mutex
 	closed    bool
 	closeOnce sync.Once
+	limiter   *rate.Limiter
 }
 
-func NewClient(hub *Hub, conn *websocket.Conn, userID, email string, logger *zap.Logger) *Client {
+func NewClient(hub *Hub, conn *websocket.Conn, userID, email string, traceID string, rateLimit int, burst int, logger *zap.Logger) *Client {
 	return &Client{
-		hub:    hub,
-		conn:   conn,
-		send:   make(chan []byte, 256),
-		userID: userID,
-		email:  email,
-		logger: logger.With(zap.String("user_id", userID)),
+		hub:     hub,
+		conn:    conn,
+		send:    make(chan []byte, 256),
+		userID:  userID,
+		email:   email,
+		traceID: traceID,
+		logger:  logger.With(zap.String("user_id", userID), zap.String("trace_id", traceID)),
+		limiter: rate.NewLimiter(rate.Limit(rateLimit), burst),
 	}
 }
 
