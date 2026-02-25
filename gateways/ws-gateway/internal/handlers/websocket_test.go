@@ -90,6 +90,7 @@ func TestWebSocketHandler_ServeHTTP(t *testing.T) {
 
 	myHub := hub.NewHub(&MockNats{}, logger)
 	go myHub.Run()
+	defer myHub.Stop()
 
 	t.Run("Full Success Flow", func(t *testing.T) {
 		mockV := &MockValidator{shouldSucceed: true}

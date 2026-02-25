@@ -19,6 +19,7 @@ type Hub struct {
 	clients    map[string]*Client
 	register   chan *Client
 	unregister chan *Client
+	stop       chan struct{}
 	nats       Publisher
 	logger     *zap.Logger
 	mu         sync.RWMutex
@@ -29,6 +30,7 @@ func NewHub(natsClient Publisher, logger *zap.Logger) *Hub {
 		clients:    make(map[string]*Client),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		stop:       make(chan struct{}),
 		nats:       natsClient,
 		logger:     logger,
 	}
@@ -37,6 +39,8 @@ func NewHub(natsClient Publisher, logger *zap.Logger) *Hub {
 func (h *Hub) Run() {
 	for {
 		select {
+		case <-h.stop:
+			return
 		case client := <-h.register:
 			h.mu.Lock()
 			if existing, ok := h.clients[client.userID]; ok {
@@ -70,6 +74,10 @@ func (h *Hub) Register(client *Client) {
 
 func (h *Hub) Unregister(client *Client) {
 	h.unregister <- client
+}
+
+func (h *Hub) Stop() {
+	close(h.stop)
 }
 
 func (h *Hub) GetClient(userID string) *Client {
