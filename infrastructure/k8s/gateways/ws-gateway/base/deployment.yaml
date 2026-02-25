@@ -21,7 +21,7 @@ spec:
         image: ws-gateway:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - containerPort: 8082
           name: http
         envFrom:
         - configMapRef:
@@ -38,14 +38,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: 8082
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: 8082
           initialDelaySeconds: 3
           periodSeconds: 5
           timeoutSeconds: 3

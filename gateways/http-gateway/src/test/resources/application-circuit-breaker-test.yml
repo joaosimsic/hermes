@@ -27,7 +27,7 @@ spring:
         - id: user-service
           uri: ${USER_SERVICE_URL:http://localhost:8082}
           predicates:
-            - Path=/api/users/**
+            - Path=/users/**
           filters:
             - name: CircuitBreaker
               args:

@@ -25,6 +25,7 @@ spec:
             - start-dev
             - --import-realm
             - --http-port=8180
+            - --health-enabled=true
           ports:
             - containerPort: 8180
               name: http
@@ -46,16 +47,28 @@ spec:
               name: keycloak-realm-volume
               subPath: realm-export.json
           
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: 8180
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health/live
               port: 8180
-            initialDelaySeconds: 90  
             periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /realms/hermes
               port: 8180
-            initialDelaySeconds: 60  
-            periodSeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
 
       restartPolicy: Always
       volumes:

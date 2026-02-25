@@ -14,7 +14,7 @@ spec:
       annotations:
         prometheus.io/scrape: "true"           
         prometheus.io/path: "/actuator/prometheus"
-        prometheus.io/port: "8082"
+        prometheus.io/port: "8083"
     spec:
       initContainers:
       - name: wait-for-postgres
@@ -61,7 +61,7 @@ spec:
         image: auth-service:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8082
+        - containerPort: 8083
         envFrom:
         - configMapRef:
             name: auth-service-config
@@ -70,7 +70,7 @@ spec:
         startupProbe:
           httpGet:
             path: /actuator/health
-            port: 8082
+            port: 8083
           initialDelaySeconds: 10
           periodSeconds: 5
           failureThreshold: 30
@@ -78,7 +78,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
-            port: 8082
+            port: 8083
           initialDelaySeconds: 0
           periodSeconds: 10
           timeoutSeconds: 3
@@ -86,7 +86,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
-            port: 8082
+            port: 8083
           initialDelaySeconds: 0
           periodSeconds: 5
           timeoutSeconds: 3

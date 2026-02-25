@@ -53,14 +53,14 @@ deploy:
         - "--server-side"
         - "--force-conflicts"
   statusCheck: true
-  statusCheckDeadlineSeconds: 600
+  statusCheckDeadlineSeconds: 420
   tolerateFailuresUntilDeadline: true
 
 portForward:
   - resourceType: service
-    resourceName: http-gateway
-    namespace: hermes-dev
-    port: 8080
+    resourceName: ingress-nginx-controller
+    namespace: ingress-nginx
+    port: 80
     localPort: 8080
 
 verify:
@@ -75,7 +75,7 @@ verify:
       args:
         - |
           for i in $(seq 1 30); do
-            if curl -sf http://http-gateway:8080/actuator/health; then
+            if curl -sf http://http-gateway:8081/actuator/health; then
               echo "API Gateway is healthy"
               exit 0
             fi
@@ -95,7 +95,7 @@ verify:
       args:
         - |
           for i in $(seq 1 30); do
-            if curl -sf http://auth-service:8082/actuator/health; then
+            if curl -sf http://auth-service:8083/actuator/health; then
               echo "Auth Service is healthy"
               exit 0
             fi
@@ -115,7 +115,7 @@ verify:
       args:
         - |
           for i in $(seq 1 30); do
-            if curl -sf http://user-service:8081/actuator/health; then
+            if curl -sf http://user-service:8084/actuator/health; then
               echo "User Service is healthy"
               exit 0
             fi

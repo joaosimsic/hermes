@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -163,7 +163,7 @@ public class AuthController {
 
     refreshTokenCookie.setHttpOnly(true);
     refreshTokenCookie.setSecure(authProperties.cookie().secure());
-    refreshTokenCookie.setPath("/api/auth");
+    refreshTokenCookie.setPath("/auth");
     refreshTokenCookie.setMaxAge(tokens.getRefreshExpiresIn());
     refreshTokenCookie.setAttribute("SameSite", authProperties.cookie().sameSite());
 
@@ -184,7 +184,7 @@ public class AuthController {
 
     refreshTokenCookie.setHttpOnly(true);
     refreshTokenCookie.setSecure(authProperties.cookie().secure());
-    refreshTokenCookie.setPath("/api/auth");
+    refreshTokenCookie.setPath("/auth");
     refreshTokenCookie.setMaxAge(0);
 
     response.addCookie(refreshTokenCookie);
