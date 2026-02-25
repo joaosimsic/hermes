@@ -42,9 +42,16 @@ func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v *jwt.Validator, l *za
 }
 
 func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.logger.Debug("WebSocket connection attempt",
+		zap.String("cookie_header", r.Header.Get("Cookie")),
+		zap.Any("cookies", r.Cookies()),
+		zap.String("protocols", r.Header.Get("Sec-WebSocket-Protocol")),
+	)
+
 	token := h.extractToken(r)
 
 	if token == "" {
+		h.logger.Warn("No token found in request")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -58,7 +65,13 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := h.upgrader.Upgrade(w, r, nil)
+	var responseHeader http.Header
+	if protocols := websocket.Subprotocols(r); len(protocols) > 0 {
+		responseHeader = http.Header{}
+		responseHeader.Set("Sec-WebSocket-Protocol", protocols[0])
+	}
+
+	conn, err := h.upgrader.Upgrade(w, r, responseHeader)
 	if err != nil {
 		h.logger.Error("WebSocket upgrade failed", zap.Error(err))
 
@@ -73,10 +86,19 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *WebSocketHandler) extractToken(r *http.Request) string {
+	if protocols := websocket.Subprotocols(r); len(protocols) > 0 {
+		for _, p := range protocols {
+			if len(p) > 7 && p[:7] == "bearer." {
+				return p[7:]
+			}
+		}
+	}
 	if cookie, err := r.Cookie("access_token"); err == nil {
 		return cookie.Value
 	}
-
+	if token := r.URL.Query().Get("token"); token != "" {
+		return token
+	}
 	return ""
 }
 

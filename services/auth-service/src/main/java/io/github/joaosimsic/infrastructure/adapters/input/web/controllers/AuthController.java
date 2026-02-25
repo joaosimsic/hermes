@@ -9,6 +9,7 @@ import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.Update
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.UpdatePasswordRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.AuthResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.GitHubAuthUrlResponse;
+import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.LoginResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.UserResponse;
 import io.github.joaosimsic.infrastructure.config.properties.AuthProperties;
 import jakarta.servlet.http.Cookie;
@@ -50,7 +51,7 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<AuthResponse> login(
+  public ResponseEntity<LoginResponse> login(
       @Valid @RequestBody LoginRequest request, HttpServletResponse response) {
 
     AuthTokens tokens = authUseCase.login(request.getEmail(), request.getPassword());
@@ -60,7 +61,11 @@ public class AuthController {
     AuthUser user = authUseCase.getCurrentUser(tokens.getAccessToken());
 
     return ResponseEntity.ok(
-        AuthResponse.builder().message("Login successful").user(mapToUserResponse(user)).build());
+        LoginResponse.builder()
+            .message("Login successful")
+            .user(mapToUserResponse(user))
+            .accessToken(tokens.getAccessToken())
+            .build());
   }
 
   @PostMapping("/logout")
