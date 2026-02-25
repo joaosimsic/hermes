@@ -51,10 +51,11 @@ spec:
           exec:
             command:
             - rabbitmq-diagnostics
-            - check_port_connectivity
-          initialDelaySeconds: 20
+            - -q
+            - check_running
+          initialDelaySeconds: 30
           periodSeconds: 10
-          timeoutSeconds: 5
+          timeoutSeconds: 10
       volumes:
       - name: data
         persistentVolumeClaim:

@@ -4,7 +4,7 @@ metadata:
   name: auth-service
 spec:
   ports:
-  - port: 8082
-    targetPort: 8082
+  - port: 8083
+    targetPort: 8083
   selector:
     app: auth-service

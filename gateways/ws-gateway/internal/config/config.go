@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	ServerPort     int    `envconfig:"GATEWAY_PORT" required:"true"`
+	ServerPort     int    `envconfig:"WS_GATEWAY_PORT" required:"true"`
 	NatsURL        string `envconfig:"NATS_URL" required:"true"`
 	JwksCacheTTL   int    `envconfig:"JWKS_CACHE_TTL" required:"true"`
 	LogLevel       string `envconfig:"LOG_LEVEL" required:"true"`

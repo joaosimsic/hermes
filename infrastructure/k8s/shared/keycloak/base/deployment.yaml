@@ -46,16 +46,26 @@ spec:
               name: keycloak-realm-volume
               subPath: realm-export.json
           
-          livenessProbe:
-            tcpSocket:
+          startupProbe:
+            httpGet:
+              path: /realms/hermes
               port: 8180
-            initialDelaySeconds: 90  
-            periodSeconds: 30
-          readinessProbe:
-            tcpSocket:
-              port: 8180
-            initialDelaySeconds: 60  
+            initialDelaySeconds: 30
             periodSeconds: 10
+            failureThreshold: 30
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8180
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /realms/hermes
+              port: 8180
+            periodSeconds: 10
+            timeoutSeconds: 5
 
       restartPolicy: Always
       volumes:
