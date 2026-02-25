@@ -16,7 +16,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
   @Test
   void shouldFailWhenNoCookiePresent() {
-    webTestClient.get().uri("/api/users/me").exchange().expectStatus().isUnauthorized();
+    webTestClient.get().uri("/users/me").exchange().expectStatus().isUnauthorized();
   }
 
   @Test
@@ -38,7 +38,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", validToken)
         .exchange()
         .expectHeader()
@@ -64,7 +64,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", expiredToken)
         .exchange()
         .expectStatus()
@@ -88,7 +88,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", wrongIssuerToken)
         .exchange()
         .expectStatus()
@@ -99,7 +99,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
   void shouldRejectMalformedToken() {
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", "invalid-token-string")
         .exchange()
         .expectStatus()
@@ -122,7 +122,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", tokenWithoutKid)
         .exchange()
         .expectStatus()
@@ -136,7 +136,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", validToken)
         .exchange()
         .expectStatus()
