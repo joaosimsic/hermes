@@ -1,5 +1,5 @@
 server:
-  port: ${GATEWAY_PORT}
+  port: ${HTTP_GATEWAY_PORT}
 
 spring:
   application:
@@ -20,7 +20,6 @@ spring:
           predicates:
             - Path=/auth/**
           filters:
-            - RewritePath=/auth(?<segment>/?.*), /api/auth${segment}
             - name: RequestRateLimiter
               args:
                 '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_UNAUTHENTICATED}
@@ -37,7 +36,6 @@ spring:
           predicates:
             - Path=/users/**
           filters:
-            - RewritePath=/users(?<segment>/?.*), /api/users${segment}
             - name: RequestRateLimiter
               args:
                 '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_AUTHENTICATED}

@@ -113,7 +113,7 @@ public class CircuitBreakerIT {
   @Test
   void shouldRouteToDownstreamWhenHealthy() {
     userServiceMock.stubFor(
-        get(urlPathEqualTo("/api/users/me"))
+        get(urlPathEqualTo("/users/me"))
             .willReturn(
                 aResponse()
                     .withStatus(200)
@@ -122,7 +122,7 @@ public class CircuitBreakerIT {
 
     webTestClient
         .get()
-        .uri("/api/users/me")
+        .uri("/users/me")
         .cookie("access_token", validToken)
         .exchange()
         .expectStatus()
@@ -135,17 +135,17 @@ public class CircuitBreakerIT {
   @Test
   void shouldReturnFallbackWhenDownstreamFails() {
     userServiceMock.stubFor(
-        get(urlPathEqualTo("/api/users/me"))
+        get(urlPathEqualTo("/users/me"))
             .willReturn(aResponse().withStatus(500).withBody("Internal Server Error")));
 
     for (int i = 0; i < 6; i++) {
-      webTestClient.get().uri("/api/users/me").cookie("access_token", validToken).exchange();
+      webTestClient.get().uri("/users/me").cookie("access_token", validToken).exchange();
     }
 
     var response =
         webTestClient
             .get()
-            .uri("/api/users/me")
+            .uri("/users/me")
             .cookie("access_token", validToken)
             .exchange()
             .returnResult(String.class);
@@ -156,7 +156,7 @@ public class CircuitBreakerIT {
   @Test
   void shouldReturnFallbackOnTimeout() {
     userServiceMock.stubFor(
-        get(urlPathEqualTo("/api/users/me"))
+        get(urlPathEqualTo("/users/me"))
             .willReturn(
                 aResponse()
                     .withStatus(200)
@@ -166,7 +166,7 @@ public class CircuitBreakerIT {
     var response =
         webTestClient
             .get()
-            .uri("/api/users/me")
+            .uri("/users/me")
             .cookie("access_token", validToken)
             .exchange()
             .returnResult(String.class);
@@ -177,15 +177,15 @@ public class CircuitBreakerIT {
   @Test
   void shouldRecoverAfterCircuitBreakerResets() throws InterruptedException {
     userServiceMock.stubFor(
-        get(urlPathEqualTo("/api/users/me")).willReturn(aResponse().withStatus(500)));
+        get(urlPathEqualTo("/users/me")).willReturn(aResponse().withStatus(500)));
 
     for (int i = 0; i < 6; i++) {
-      webTestClient.get().uri("/api/users/me").cookie("access_token", validToken).exchange();
+      webTestClient.get().uri("/users/me").cookie("access_token", validToken).exchange();
     }
 
     userServiceMock.resetAll();
     userServiceMock.stubFor(
-        get(urlPathEqualTo("/api/users/me"))
+        get(urlPathEqualTo("/users/me"))
             .willReturn(
                 aResponse()
                     .withStatus(200)

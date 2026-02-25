@@ -48,10 +48,10 @@ public class RateLimitIT {
     userServiceMock.start();
 
     authServiceMock.stubFor(
-        any(urlPathMatching("/api/auth.*"))
+        any(urlPathMatching("/auth.*"))
             .willReturn(aResponse().withStatus(200).withBody("{}")));
     userServiceMock.stubFor(
-        any(urlPathMatching("/api/users.*"))
+        any(urlPathMatching("/users.*"))
             .willReturn(aResponse().withStatus(200).withBody("{}")));
   }
 
@@ -121,7 +121,7 @@ public class RateLimitIT {
     for (int i = 0; i < 15; i++) {
       webTestClient
           .get()
-          .uri("/api/users/me")
+          .uri("/users/me")
           .cookie("access_token", validToken)
           .exchange()
           .expectHeader()
@@ -131,7 +131,7 @@ public class RateLimitIT {
     var response =
         webTestClient
             .get()
-            .uri("/api/users/me")
+            .uri("/users/me")
             .cookie("access_token", validToken)
             .exchange()
             .expectHeader()
@@ -182,7 +182,7 @@ public class RateLimitIT {
     var response1 =
         webTestClient
             .get()
-            .uri("/api/users/me")
+            .uri("/users/me")
             .cookie("access_token", user1Token)
             .exchange()
             .returnResult(String.class);
@@ -192,7 +192,7 @@ public class RateLimitIT {
     var response2 =
         webTestClient
             .get()
-            .uri("/api/users/me")
+            .uri("/users/me")
             .cookie("access_token", user2Token)
             .exchange()
             .returnResult(String.class);

@@ -29,7 +29,7 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/actuator/health/**")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/users/sync")
+                    .requestMatchers(HttpMethod.POST, "/users/sync")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
