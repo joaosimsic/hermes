@@ -71,25 +71,25 @@ resilience4j:
   circuitbreaker:
     instances:
       userServiceCircuitBreaker:
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 30000
-        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: ${CB_SLIDING_WINDOW_SIZE}
+        minimumNumberOfCalls: ${CB_MINIMUM_NUMBER_OF_CALLS}
+        failureRateThreshold: ${CB_FAILURE_RATE_THRESHOLD}
+        waitDurationInOpenState: ${CB_WAIT_DURATION_OPEN_STATE_SECONDS}000
+        permittedNumberOfCallsInHalfOpenState: ${CB_PERMITTED_CALLS_HALF_OPEN}
         automaticTransitionFromOpenToHalfOpenEnabled: true
       authServiceCircuitBreaker:
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 30000
-        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: ${CB_SLIDING_WINDOW_SIZE}
+        minimumNumberOfCalls: ${CB_MINIMUM_NUMBER_OF_CALLS}
+        failureRateThreshold: ${CB_FAILURE_RATE_THRESHOLD}
+        waitDurationInOpenState: ${CB_WAIT_DURATION_OPEN_STATE_SECONDS}000
+        permittedNumberOfCallsInHalfOpenState: ${CB_PERMITTED_CALLS_HALF_OPEN}
         automaticTransitionFromOpenToHalfOpenEnabled: true
   timelimiter:
     instances:
       userServiceCircuitBreaker:
-        timeoutDuration: 10s
+        timeoutDuration: ${TIME_LIMITER_TIMEOUT_SECONDS}s
       authServiceCircuitBreaker:
-        timeoutDuration: 10s
+        timeoutDuration: ${TIME_LIMITER_TIMEOUT_SECONDS}s
 
 management:
   health:
