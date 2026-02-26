@@ -12,9 +12,15 @@ func TestLoad(t *testing.T) {
 			"LOG_LEVEL", "CHAT_SERVICE_URL", "GATEWAY_PROFILE",
 			"KC_JWKS_URL", "KC_JWT_ISSUER", "COGNITO_JWKS_URL",
 			"COGNITO_JWT_ISSUER", "CORS_ALLOWED_ORIGINS",
+			"RATE_LIMIT_AUTHENTICATED", "RATE_LIMIT_AUTHENTICATED_BURST",
+			"GATEWAY_CACHE_HOST", "REDIS_PORT",
+			"CB_SLIDING_WINDOW_SIZE", "CB_MINIMUM_NUMBER_OF_CALLS",
+			"CB_FAILURE_RATE_THRESHOLD", "CB_WAIT_DURATION_OPEN_STATE_SECONDS",
+			"CB_PERMITTED_CALLS_HALF_OPEN", "TIME_LIMITER_TIMEOUT_SECONDS",
+			"CONNECTION_MAX_DURATION_MINUTES",
 		}
 		for _, e := range envs {
-			_ = os.Unsetenv(e) 
+			_ = os.Unsetenv(e)
 		}
 	}
 
@@ -29,6 +35,17 @@ func TestLoad(t *testing.T) {
 		setEnv(t, "GATEWAY_PROFILE", "dev")
 		setEnv(t, "KC_JWKS_URL", "http://keycloak/jwks")
 		setEnv(t, "KC_JWT_ISSUER", "my-issuer")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED", "100")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED_BURST", "150")
+		setEnv(t, "GATEWAY_CACHE_HOST", "localhost")
+		setEnv(t, "REDIS_PORT", "6379")
+		setEnv(t, "CB_SLIDING_WINDOW_SIZE", "10")
+		setEnv(t, "CB_MINIMUM_NUMBER_OF_CALLS", "5")
+		setEnv(t, "CB_FAILURE_RATE_THRESHOLD", "50")
+		setEnv(t, "CB_WAIT_DURATION_OPEN_STATE_SECONDS", "30")
+		setEnv(t, "CB_PERMITTED_CALLS_HALF_OPEN", "3")
+		setEnv(t, "TIME_LIMITER_TIMEOUT_SECONDS", "10")
+		setEnv(t, "CONNECTION_MAX_DURATION_MINUTES", "60")
 
 		cfg, err := Load()
 		if err != nil {
@@ -51,6 +68,17 @@ func TestLoad(t *testing.T) {
 		setEnv(t, "LOG_LEVEL", "info")
 		setEnv(t, "CHAT_SERVICE_URL", "http://chat:8081")
 		setEnv(t, "GATEWAY_PROFILE", "prod")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED", "100")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED_BURST", "150")
+		setEnv(t, "GATEWAY_CACHE_HOST", "localhost")
+		setEnv(t, "REDIS_PORT", "6379")
+		setEnv(t, "CB_SLIDING_WINDOW_SIZE", "10")
+		setEnv(t, "CB_MINIMUM_NUMBER_OF_CALLS", "5")
+		setEnv(t, "CB_FAILURE_RATE_THRESHOLD", "50")
+		setEnv(t, "CB_WAIT_DURATION_OPEN_STATE_SECONDS", "30")
+		setEnv(t, "CB_PERMITTED_CALLS_HALF_OPEN", "3")
+		setEnv(t, "TIME_LIMITER_TIMEOUT_SECONDS", "10")
+		setEnv(t, "CONNECTION_MAX_DURATION_MINUTES", "60")
 
 		_, err := Load()
 		if err == nil {
@@ -66,6 +94,17 @@ func TestLoad(t *testing.T) {
 		setEnv(t, "LOG_LEVEL", "info")
 		setEnv(t, "CHAT_SERVICE_URL", "http://chat:8081")
 		setEnv(t, "GATEWAY_PROFILE", "dev")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED", "100")
+		setEnv(t, "RATE_LIMIT_AUTHENTICATED_BURST", "150")
+		setEnv(t, "GATEWAY_CACHE_HOST", "localhost")
+		setEnv(t, "REDIS_PORT", "6379")
+		setEnv(t, "CB_SLIDING_WINDOW_SIZE", "10")
+		setEnv(t, "CB_MINIMUM_NUMBER_OF_CALLS", "5")
+		setEnv(t, "CB_FAILURE_RATE_THRESHOLD", "50")
+		setEnv(t, "CB_WAIT_DURATION_OPEN_STATE_SECONDS", "30")
+		setEnv(t, "CB_PERMITTED_CALLS_HALF_OPEN", "3")
+		setEnv(t, "TIME_LIMITER_TIMEOUT_SECONDS", "10")
+		setEnv(t, "CONNECTION_MAX_DURATION_MINUTES", "60")
 
 		_, err := Load()
 		if err == nil {

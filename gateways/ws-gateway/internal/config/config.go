@@ -14,6 +14,9 @@ type Config struct {
 	ChatServiceURL string `envconfig:"CHAT_SERVICE_URL" required:"true"`
 	Profile        string `envconfig:"GATEWAY_PROFILE" required:"true"`
 
+	RateLimitAuthenticated      int `envconfig:"RATE_LIMIT_AUTHENTICATED" required:"true"`
+	RateLimitAuthenticatedBurst int `envconfig:"RATE_LIMIT_AUTHENTICATED_BURST" required:"true"`
+
 	KcJwksURL   string `envconfig:"KC_JWKS_URL"`
 	KcJwtIssuer string `envconfig:"KC_JWT_ISSUER"`
 
@@ -22,6 +25,18 @@ type Config struct {
 
 	FrontendURL        string `envconfig:"FRONTEND_URL"`
 	CorsAllowedOrigins string `envconfig:"CORS_ALLOWED_ORIGINS"`
+
+	RedisHost string `envconfig:"GATEWAY_CACHE_HOST" required:"true"`
+	RedisPort int    `envconfig:"REDIS_PORT" required:"true"`
+
+	CircuitBreakerSlidingWindowSize                     int `envconfig:"CB_SLIDING_WINDOW_SIZE" required:"true"`
+	CircuitBreakerMinimumNumberOfCalls                  int `envconfig:"CB_MINIMUM_NUMBER_OF_CALLS" required:"true"`
+	CircuitBreakerFailureRateThreshold                  int `envconfig:"CB_FAILURE_RATE_THRESHOLD" required:"true"`
+	CircuitBreakerWaitDurationInOpenStateSeconds        int `envconfig:"CB_WAIT_DURATION_OPEN_STATE_SECONDS" required:"true"`
+	CircuitBreakerPermittedNumberOfCallsInHalfOpenState int `envconfig:"CB_PERMITTED_CALLS_HALF_OPEN" required:"true"`
+
+	TimeLimiterTimeoutSeconds    int `envconfig:"TIME_LIMITER_TIMEOUT_SECONDS" required:"true"`
+	ConnectionMaxDurationMinutes int `envconfig:"CONNECTION_MAX_DURATION_MINUTES" required:"true"`
 }
 
 func Load() (*Config, error) {
@@ -74,4 +89,8 @@ func (c *Config) GetAllowedOrigin() string {
 		return c.FrontendURL
 	}
 	return c.CorsAllowedOrigins
+}
+
+func (c *Config) GetRedisAddr() string {
+	return fmt.Sprintf("%s:%d", c.RedisHost, c.RedisPort)
 }

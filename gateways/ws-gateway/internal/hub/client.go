@@ -1,13 +1,16 @@
 package hub
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/ratelimit"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -18,25 +21,52 @@ const (
 )
 
 type Client struct {
-	hub       *Hub
-	conn      *websocket.Conn
-	send      chan []byte
-	userID    string
-	email     string
-	logger    *zap.Logger
-	mu        sync.Mutex
-	closed    bool
-	closeOnce sync.Once
+	hub            *Hub
+	conn           *websocket.Conn
+	send           chan []byte
+	userID         string
+	email          string
+	traceID        string
+	logger         *zap.Logger
+	mu             sync.Mutex
+	closed         bool
+	closeOnce      sync.Once
+	limiter        *rate.Limiter
+	redisLimiter   *ratelimit.RedisRateLimiter
+	rateLimit      int
+	rateLimitBurst int
+	connectedAt    time.Time
+	maxDuration    time.Duration
 }
 
-func NewClient(hub *Hub, conn *websocket.Conn, userID, email string, logger *zap.Logger) *Client {
+type ClientOptions struct {
+	Hub            *Hub
+	Conn           *websocket.Conn
+	UserID         string
+	Email          string
+	TraceID        string
+	RateLimit      int
+	RateLimitBurst int
+	Logger         *zap.Logger
+	RedisLimiter   *ratelimit.RedisRateLimiter
+	MaxDuration    time.Duration
+}
+
+func NewClient(opts ClientOptions) *Client {
 	return &Client{
-		hub:    hub,
-		conn:   conn,
-		send:   make(chan []byte, 256),
-		userID: userID,
-		email:  email,
-		logger: logger.With(zap.String("user_id", userID)),
+		hub:            opts.Hub,
+		conn:           opts.Conn,
+		send:           make(chan []byte, 256),
+		userID:         opts.UserID,
+		email:          opts.Email,
+		traceID:        opts.TraceID,
+		logger:         opts.Logger.With(zap.String("user_id", opts.UserID), zap.String("trace_id", opts.TraceID)),
+		limiter:        rate.NewLimiter(rate.Limit(opts.RateLimit), opts.RateLimitBurst),
+		redisLimiter:   opts.RedisLimiter,
+		rateLimit:      opts.RateLimit,
+		rateLimitBurst: opts.RateLimitBurst,
+		connectedAt:    time.Now(),
+		maxDuration:    opts.MaxDuration,
 	}
 }
 
@@ -57,6 +87,12 @@ func (c *Client) ReadPump() {
 	})
 
 	for {
+		if c.maxDuration > 0 && time.Since(c.connectedAt) > c.maxDuration {
+			c.logger.Info("connection max duration exceeded, closing")
+			c.sendSystemMessage("CONNECTION_TIMEOUT", "Connection duration limit exceeded")
+			break
+		}
+
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -64,6 +100,18 @@ func (c *Client) ReadPump() {
 			}
 
 			break
+		}
+
+		allowed, rateLimitResult := c.checkRateLimit()
+		if !allowed {
+			c.logger.Warn("rate limit exceeded, dropping message")
+			c.sendError("RATE_LIMIT_EXCEEDED", "Too many messages")
+			c.sendRateLimitInfo(rateLimitResult)
+			continue
+		}
+
+		if rateLimitResult != nil {
+			c.sendRateLimitInfo(rateLimitResult)
 		}
 
 		var envelope protocol.Envelope
@@ -74,6 +122,66 @@ func (c *Client) ReadPump() {
 
 		c.handleMessage(&envelope)
 	}
+}
+
+func (c *Client) checkRateLimit() (bool, *ratelimit.RateLimitResult) {
+	if c.redisLimiter != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		result, err := c.redisLimiter.Check(ctx, "user:"+c.userID, c.rateLimitBurst)
+		if err != nil {
+			c.logger.Warn("redis rate limit check failed, falling back to in-memory", zap.Error(err))
+			return c.limiter.Allow(), nil
+		}
+
+		return result.Allowed, result
+	}
+
+	return c.limiter.Allow(), nil
+}
+
+func (c *Client) sendRateLimitInfo(result *ratelimit.RateLimitResult) {
+	if result == nil {
+		return
+	}
+
+	env, err := protocol.NewEnvelope(protocol.TypeRateLimitInfo, protocol.RateLimitInfoPayload{
+		Limit:     result.Limit,
+		Remaining: result.Remaining,
+		ResetIn:   int(result.ResetIn.Seconds()),
+	})
+	if err != nil {
+		c.logger.Error("failed to create rate limit info envelope", zap.Error(err))
+		return
+	}
+
+	data, err := env.Bytes()
+	if err != nil {
+		c.logger.Error("failed to serialize rate limit info envelope", zap.Error(err))
+		return
+	}
+
+	c.Send(data)
+}
+
+func (c *Client) sendSystemMessage(code, message string) {
+	env, err := protocol.NewEnvelope(protocol.TypeSystem, protocol.SystemPayload{
+		Code:    code,
+		Message: message,
+	})
+	if err != nil {
+		c.logger.Error("failed to create system envelope", zap.Error(err))
+		return
+	}
+
+	data, err := env.Bytes()
+	if err != nil {
+		c.logger.Error("failed to serialize system envelope", zap.Error(err))
+		return
+	}
+
+	c.Send(data)
 }
 
 func (c *Client) WritePump() {

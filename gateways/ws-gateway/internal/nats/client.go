@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/resilience"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/types"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 )
@@ -29,14 +31,24 @@ type MessageHandler interface {
 }
 
 type Client struct {
-	conn    *nats.Conn
-	logger  *zap.Logger
-	mu      sync.RWMutex
-	handler MessageHandler
-	subs    []*nats.Subscription
+	conn           *nats.Conn
+	logger         *zap.Logger
+	mu             sync.RWMutex
+	handler        MessageHandler
+	subs           []*nats.Subscription
+	circuitBreaker *resilience.CircuitBreaker
 }
 
-func NewClient(url string, logger *zap.Logger) (*Client, error) {
+func NewClient(url string, logger *zap.Logger, cbConfig resilience.CircuitBreakerConfig) (*Client, error) {
+	cb := resilience.NewCircuitBreaker("nats", cbConfig)
+	cb.SetStateChangeNotifier(func(name string, from, to resilience.State) {
+		logger.Info("circuit breaker state changed",
+			zap.String("breaker", name),
+			zap.String("from", from.String()),
+			zap.String("to", to.String()),
+		)
+	})
+
 	opts := []nats.Option{
 		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(-1),
@@ -48,6 +60,7 @@ func NewClient(url string, logger *zap.Logger) (*Client, error) {
 		}),
 		nats.ReconnectHandler(func(_ *nats.Conn) {
 			logger.Info("NATS reconnected")
+			cb.Reset()
 		}),
 	}
 
@@ -57,8 +70,9 @@ func NewClient(url string, logger *zap.Logger) (*Client, error) {
 	}
 
 	return &Client{
-		conn:   nc,
-		logger: logger.Named("nats_client"),
+		conn:           nc,
+		logger:         logger.Named("nats_client"),
+		circuitBreaker: cb,
 	}, nil
 }
 
@@ -134,53 +148,76 @@ func (c *Client) handleUserMessage(userID string, msg *nats.Msg) {
 	}
 }
 
-func (c *Client) PublishMessage(senderID string, msg *protocol.SendMessagePayload) error {
+func (c *Client) PublishMessage(ctx types.MessageContext, msg *protocol.SendMessagePayload) error {
 	payload := map[string]any{
-		"senderId":       senderID,
+		"senderId":       ctx.UserID,
+		"senderEmail":    ctx.Email,
 		"conversationId": msg.ConversationID,
 		"content":        msg.Content,
 		"mediaId":        msg.MediaID,
 		"clientMsgId":    msg.ClientMsgID,
+		"_headers": map[string]string{
+			"X-User-Id":    ctx.UserID,
+			"X-User-Email": ctx.Email,
+			"X-Trace-Id":   ctx.TraceID,
+		},
 	}
 	return c.publish(SubjectSendMessage, payload)
 }
 
-func (c *Client) PublishTyping(userID, conversationID string) error {
+func (c *Client) PublishTyping(ctx types.MessageContext, conversationID string) error {
 	subject := fmt.Sprintf(SubjectChatConversation, conversationID)
-	env, err := protocol.NewEnvelope(protocol.TypeTyping, protocol.TypingPayload{
-		ConversationID: conversationID,
-		UserID:         userID,
-	})
-	if err != nil {
-		return err
+
+	payload := map[string]any{
+		"type": string(protocol.TypeTyping),
+		"payload": protocol.TypingPayload{
+			ConversationID: conversationID,
+			UserID:         ctx.UserID,
+		},
+		"_headers": map[string]string{
+			"X-User-Id":    ctx.UserID,
+			"X-User-Email": ctx.Email,
+			"X-Trace-Id":   ctx.TraceID,
+		},
 	}
 
-	data, err := env.Bytes()
-	if err != nil {
-		return err
-	}
-	return c.conn.Publish(subject, data)
+	return c.publish(subject, payload)
 }
 
-func (c *Client) PublishMarkRead(userID, conversationID, messageID string) error {
-	payload := map[string]string{
-		"userId":         userID,
+func (c *Client) PublishMarkRead(ctx types.MessageContext, conversationID, messageID string) error {
+	payload := map[string]any{
+		"userId":         ctx.UserID,
 		"conversationId": conversationID,
 		"messageId":      messageID,
+		"_headers": map[string]string{
+			"X-User-Id":    ctx.UserID,
+			"X-User-Email": ctx.Email,
+			"X-Trace-Id":   ctx.TraceID,
+		},
 	}
 	return c.publish(SubjectMarkRead, payload)
 }
 
-func (c *Client) PublishPresence(userID, status string) error {
-	payload := protocol.PresencePayload{
-		UserID: userID,
-		Status: status,
+func (c *Client) PublishPresence(userID, status, traceID string) error {
+	payload := map[string]any{
+		"userId": userID,
+		"status": status,
+		"_headers": map[string]string{
+			"X-User-Id":  userID,
+			"X-Trace-Id": traceID,
+		},
 	}
 	return c.publish(SubjectPresenceBroadcast, payload)
 }
 
-func (c *Client) PublishUserOnline(userID string) error {
-	payload := map[string]string{"userId": userID}
+func (c *Client) PublishUserOnline(userID, traceID string) error {
+	payload := map[string]any{
+		"userId": userID,
+		"_headers": map[string]string{
+			"X-User-Id":  userID,
+			"X-Trace-Id": traceID,
+		},
+	}
 	return c.publish(SubjectUserOnline, payload)
 }
 
@@ -204,11 +241,34 @@ func (c *Client) trackSubscription(sub *nats.Subscription) {
 }
 
 func (c *Client) publish(subject string, v any) error {
+	if err := c.circuitBreaker.Allow(); err != nil {
+		c.logger.Warn("circuit breaker rejected request",
+			zap.String("subject", subject),
+			zap.Error(err),
+		)
+		return fmt.Errorf("nats: circuit breaker open: %w", err)
+	}
+
 	data, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Errorf("nats: marshal error for subject %s: %w", subject, err)
 	}
-	return c.conn.Publish(subject, data)
+
+	if err := c.conn.Publish(subject, data); err != nil {
+		c.circuitBreaker.RecordFailure()
+		return fmt.Errorf("nats: publish error for subject %s: %w", subject, err)
+	}
+
+	c.circuitBreaker.RecordSuccess()
+	return nil
+}
+
+func (c *Client) CircuitBreakerState() resilience.State {
+	return c.circuitBreaker.State()
+}
+
+func (c *Client) CircuitBreakerMetrics() (state resilience.State, failures, total int, failureRate float64) {
+	return c.circuitBreaker.Metrics()
 }
 
 func unmarshalAndHandle[T any](c *Client, data []byte, userID string, next func(string, *T)) {

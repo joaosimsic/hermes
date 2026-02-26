@@ -97,9 +97,9 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
 
   private String resolveKey(ServerWebExchange exchange, boolean authenticated) {
     if (authenticated) {
-      String email = exchange.getAttribute("userEmail");
+      String userId = exchange.getAttribute("userId");
 
-      if (email != null) return KEY_PREFIX + "user:" + email;
+      if (userId != null) return KEY_PREFIX + "user:" + userId;
     }
 
     String ip =

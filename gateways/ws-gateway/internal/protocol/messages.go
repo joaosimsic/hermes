@@ -10,16 +10,18 @@ import (
 type MessageType string
 
 const (
-	TypeSendMessage MessageType = "send_message"
-	TypeMarkRead    MessageType = "mark_read"
-	TypePing        MessageType = "ping"
-	TypeMessage     MessageType = "message"
-	TypeTyping      MessageType = "typing"
-	TypeReadReceipt MessageType = "read_receipt"
-	TypePresence    MessageType = "presence"
-	TypeAck         MessageType = "ack"
-	TypeError       MessageType = "error"
-	TypePong        MessageType = "pong"
+	TypeSendMessage   MessageType = "send_message"
+	TypeMarkRead      MessageType = "mark_read"
+	TypePing          MessageType = "ping"
+	TypeMessage       MessageType = "message"
+	TypeTyping        MessageType = "typing"
+	TypeReadReceipt   MessageType = "read_receipt"
+	TypePresence      MessageType = "presence"
+	TypeAck           MessageType = "ack"
+	TypeError         MessageType = "error"
+	TypePong          MessageType = "pong"
+	TypeRateLimitInfo MessageType = "rate_limit_info"
+	TypeSystem        MessageType = "system"
 )
 
 type Validator interface {
@@ -106,6 +108,17 @@ type AckPayload struct {
 }
 
 type ErrorPayload struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type RateLimitInfoPayload struct {
+	Limit     int `json:"limit"`
+	Remaining int `json:"remaining"`
+	ResetIn   int `json:"resetIn"`
+}
+
+type SystemPayload struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
