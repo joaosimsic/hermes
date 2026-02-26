@@ -12,7 +12,10 @@ import (
 	"github.com/joaosimsic/hermes/ws-gateway/internal/handlers"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/hub"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/nats"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/ratelimit"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/resilience"
 	"github.com/joaosimsic/hermes/ws-gateway/pkg/jwt"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -30,13 +33,33 @@ func main() {
 	logger.Info("starting ws-gateway",
 		zap.Int("port", cfg.ServerPort),
 		zap.String("nats_url", cfg.NatsURL),
+		zap.String("redis_addr", cfg.GetRedisAddr()),
 	)
 
-	natsClient, err := nats.NewClient(cfg.NatsURL, logger)
+	cbConfig := resilience.CircuitBreakerConfig{
+		SlidingWindowSize:                            cfg.CircuitBreakerSlidingWindowSize,
+		MinimumNumberOfCalls:                         cfg.CircuitBreakerMinimumNumberOfCalls,
+		FailureRateThreshold:                         float64(cfg.CircuitBreakerFailureRateThreshold),
+		WaitDurationInOpenState:                      time.Duration(cfg.CircuitBreakerWaitDurationInOpenStateSeconds) * time.Second,
+		PermittedNumberOfCallsInHalfOpenState:        cfg.CircuitBreakerPermittedNumberOfCallsInHalfOpenState,
+		AutomaticTransitionFromOpenToHalfOpenEnabled: true,
+	}
+
+	natsClient, err := nats.NewClient(cfg.NatsURL, logger, cbConfig)
 	if err != nil {
 		logger.Fatal("failed to connect to NATS", zap.Error(err))
 	}
 	defer natsClient.Close()
+
+	var redisLimiter *ratelimit.RedisRateLimiter
+	if cfg.RedisHost != "" {
+		redisClient := redis.NewClient(&redis.Options{
+			Addr: cfg.GetRedisAddr(),
+		})
+		redisLimiter = ratelimit.NewRedisRateLimiter(redisClient, time.Second)
+		defer func() { _ = redisLimiter.Close() }()
+		logger.Info("Redis rate limiter initialized")
+	}
 
 	jwtValidator := jwt.NewValidator(
 		cfg.GetJwksURL(),
@@ -53,11 +76,11 @@ func main() {
 
 	go h.Run()
 
-	wsHandler := handlers.NewWebSocketHandler(cfg, h, jwtValidator, logger)
+	wsHandler := handlers.NewWebSocketHandler(cfg, h, jwtValidator, logger, redisLimiter)
 	healthHandler := &handlers.HealthHandler{}
 
 	mux := http.NewServeMux()
-	mux.Handle("/ws", wsHandler)
+	mux.Handle("/ws", handlers.TraceMiddleware(wsHandler))
 	mux.Handle("/health", healthHandler)
 	mux.Handle("/healthz", healthHandler)
 

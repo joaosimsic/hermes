@@ -4,15 +4,16 @@ import (
 	"sync"
 
 	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/types"
 	"go.uber.org/zap"
 )
 
 type Publisher interface {
-	PublishMessage(senderID string, msg *protocol.SendMessagePayload) error
-	PublishTyping(userID, conversationID string) error
-	PublishMarkRead(userID, conversationID, messageID string) error
-	PublishPresence(userID, status string) error
-	PublishUserOnline(userID string) error
+	PublishMessage(ctx types.MessageContext, msg *protocol.SendMessagePayload) error
+	PublishTyping(ctx types.MessageContext, conversationID string) error
+	PublishMarkRead(ctx types.MessageContext, conversationID, messageID string) error
+	PublishPresence(userID, status, traceID string) error
+	PublishUserOnline(userID, traceID string) error
 }
 
 type Hub struct {
@@ -50,8 +51,8 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 
 			h.logger.Info("client registered", zap.String("user_id", client.userID))
-			h.publishPresence(client.userID, "online")
-			h.notifyUserOnline(client.userID)
+			h.publishPresence(client.userID, client.traceID, "online")
+			h.notifyUserOnline(client.userID, client.traceID)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -60,7 +61,7 @@ func (h *Hub) Run() {
 				h.mu.Unlock()
 
 				h.logger.Info("client unregistered", zap.String("user_id", client.userID))
-				h.publishPresence(client.userID, "offline")
+				h.publishPresence(client.userID, client.traceID, "offline")
 			} else {
 				h.mu.Unlock()
 			}
@@ -107,23 +108,38 @@ func (h *Hub) SendToUser(userID string, data []byte) bool {
 }
 
 func (h *Hub) HandleSendMessage(client *Client, msg *protocol.SendMessagePayload) {
-	_ = h.nats.PublishMessage(client.userID, msg)
+	ctx := types.MessageContext{
+		UserID:  client.userID,
+		Email:   client.email,
+		TraceID: client.traceID,
+	}
+	_ = h.nats.PublishMessage(ctx, msg)
 }
 
 func (h *Hub) HandleTyping(client *Client, msg *protocol.TypingPayload) {
-	_ = h.nats.PublishTyping(client.userID, msg.ConversationID)
+	ctx := types.MessageContext{
+		UserID:  client.userID,
+		Email:   client.email,
+		TraceID: client.traceID,
+	}
+	_ = h.nats.PublishTyping(ctx, msg.ConversationID)
 }
 
 func (h *Hub) HandleMarkRead(client *Client, msg *protocol.MarkReadPayload) {
-	_ = h.nats.PublishMarkRead(client.userID, msg.ConversationID, msg.MessageID)
+	ctx := types.MessageContext{
+		UserID:  client.userID,
+		Email:   client.email,
+		TraceID: client.traceID,
+	}
+	_ = h.nats.PublishMarkRead(ctx, msg.ConversationID, msg.MessageID)
 }
 
-func (h *Hub) publishPresence(userID, status string) {
-	_ = h.nats.PublishPresence(userID, status)
+func (h *Hub) publishPresence(userID, traceID, status string) {
+	_ = h.nats.PublishPresence(userID, status, traceID)
 }
 
-func (h *Hub) notifyUserOnline(userID string) {
-	_ = h.nats.PublishUserOnline(userID)
+func (h *Hub) notifyUserOnline(userID, traceID string) {
+	_ = h.nats.PublishUserOnline(userID, traceID)
 }
 
 func (h *Hub) OnMessageReceived(targetUserID string, msg *protocol.MessagePayload) {

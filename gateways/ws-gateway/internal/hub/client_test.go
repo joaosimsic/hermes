@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/types"
 	"go.uber.org/zap"
 )
 
@@ -17,16 +18,20 @@ type MockPublisher struct {
 	MsgChan chan bool
 }
 
-func (m *MockPublisher) PublishMessage(s string, msg *protocol.SendMessagePayload) error {
+func (m *MockPublisher) PublishMessage(ctx types.MessageContext, msg *protocol.SendMessagePayload) error {
 	if m.MsgChan != nil {
 		m.MsgChan <- true
 	}
 	return nil
 }
-func (m *MockPublisher) PublishTyping(u, c string) error        { return nil }
-func (m *MockPublisher) PublishMarkRead(u, c, mID string) error { return nil }
-func (m *MockPublisher) PublishPresence(u, s string) error      { return nil }
-func (m *MockPublisher) PublishUserOnline(u string) error       { return nil }
+func (m *MockPublisher) PublishTyping(ctx types.MessageContext, conversationID string) error {
+	return nil
+}
+func (m *MockPublisher) PublishMarkRead(ctx types.MessageContext, conversationID, messageID string) error {
+	return nil
+}
+func (m *MockPublisher) PublishPresence(userID, status, traceID string) error { return nil }
+func (m *MockPublisher) PublishUserOnline(userID, traceID string) error       { return nil }
 
 func TestClient_ReadPump(t *testing.T) {
 	logger := zap.NewNop()
@@ -39,7 +44,16 @@ func TestClient_ReadPump(t *testing.T) {
 		upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 		conn, _ := upgrader.Upgrade(w, r, nil)
 
-		client := NewClient(h, conn, "user_123", "test@example.com", "trace-1", 100, 10, logger)
+		client := NewClient(ClientOptions{
+			Hub:            h,
+			Conn:           conn,
+			UserID:         "user_123",
+			Email:          "test@example.com",
+			TraceID:        "trace-1",
+			RateLimit:      100,
+			RateLimitBurst: 10,
+			Logger:         logger,
+		})
 		h.register <- client
 		client.ReadPump()
 	}))
@@ -73,7 +87,16 @@ func TestClient_WritePump(t *testing.T) {
 		upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 		conn, _ := upgrader.Upgrade(w, r, nil)
 
-		client := NewClient(h, conn, "user_123", "test@example.com", "trace-1", 100, 10, logger)
+		client := NewClient(ClientOptions{
+			Hub:            h,
+			Conn:           conn,
+			UserID:         "user_123",
+			Email:          "test@example.com",
+			TraceID:        "trace-1",
+			RateLimit:      100,
+			RateLimitBurst: 10,
+			Logger:         logger,
+		})
 
 		go client.WritePump()
 		client.Send([]byte("ping-from-server"))

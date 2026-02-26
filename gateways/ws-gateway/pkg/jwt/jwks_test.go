@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -42,10 +43,7 @@ func TestValidator_Validate(t *testing.T) {
 	}))
 	defer server.Close()
 
-	validator, err := NewValidator(t.Context(), server.URL, issuer)
-	if err != nil {
-		t.Fatalf("failed to create validator: %v", err)
-	}
+	validator := NewValidator(server.URL, issuer, time.Hour)
 
 	t.Run("Valid Token", func(t *testing.T) {
 		claims := &Claims{
@@ -65,7 +63,7 @@ func TestValidator_Validate(t *testing.T) {
 			t.Fatalf("failed to sign token: %v", err)
 		}
 
-		validatedClaims, err := validator.Validate(tokenString)
+		validatedClaims, err := validator.Validate(context.Background(), tokenString)
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
@@ -86,7 +84,7 @@ func TestValidator_Validate(t *testing.T) {
 		token.Header["kid"] = kid
 		tokenString, _ := token.SignedString(privateKey)
 
-		_, err := validator.Validate(tokenString)
+		_, err := validator.Validate(context.Background(), tokenString)
 		if err == nil {
 			t.Error("expected error for invalid issuer, got nil")
 		}
@@ -105,7 +103,7 @@ func TestValidator_Validate(t *testing.T) {
 		token.Header["kid"] = kid
 		tokenString, _ := token.SignedString(wrongKey)
 
-		_, err := validator.Validate(tokenString)
+		_, err := validator.Validate(context.Background(), tokenString)
 		if err == nil {
 			t.Error("expected error for invalid signature, got nil")
 		}

@@ -25,6 +25,18 @@ type Config struct {
 
 	FrontendURL        string `envconfig:"FRONTEND_URL"`
 	CorsAllowedOrigins string `envconfig:"CORS_ALLOWED_ORIGINS"`
+
+	RedisHost string `envconfig:"GATEWAY_CACHE_HOST" default:"localhost"`
+	RedisPort int    `envconfig:"REDIS_PORT" default:"6379"`
+
+	CircuitBreakerSlidingWindowSize                     int `envconfig:"CB_SLIDING_WINDOW_SIZE" default:"10"`
+	CircuitBreakerMinimumNumberOfCalls                  int `envconfig:"CB_MINIMUM_NUMBER_OF_CALLS" default:"5"`
+	CircuitBreakerFailureRateThreshold                  int `envconfig:"CB_FAILURE_RATE_THRESHOLD" default:"50"`
+	CircuitBreakerWaitDurationInOpenStateSeconds        int `envconfig:"CB_WAIT_DURATION_OPEN_STATE_SECONDS" default:"30"`
+	CircuitBreakerPermittedNumberOfCallsInHalfOpenState int `envconfig:"CB_PERMITTED_CALLS_HALF_OPEN" default:"3"`
+
+	TimeLimiterTimeoutSeconds    int `envconfig:"TIME_LIMITER_TIMEOUT_SECONDS" default:"10"`
+	ConnectionMaxDurationMinutes int `envconfig:"CONNECTION_MAX_DURATION_MINUTES" default:"0"`
 }
 
 func Load() (*Config, error) {
@@ -77,4 +89,8 @@ func (c *Config) GetAllowedOrigin() string {
 		return c.FrontendURL
 	}
 	return c.CorsAllowedOrigins
+}
+
+func (c *Config) GetRedisAddr() string {
+	return fmt.Sprintf("%s:%d", c.RedisHost, c.RedisPort)
 }

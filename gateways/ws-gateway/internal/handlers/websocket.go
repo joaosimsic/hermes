@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/config"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/hub"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/ratelimit"
 	"github.com/joaosimsic/hermes/ws-gateway/pkg/jwt"
 	"go.uber.org/zap"
 )
@@ -17,19 +18,21 @@ type TokenValidator interface {
 }
 
 type WebSocketHandler struct {
-	cfg       *config.Config
-	hub       *hub.Hub
-	validator TokenValidator
-	logger    *zap.Logger
-	upgrader  websocket.Upgrader
+	cfg          *config.Config
+	hub          *hub.Hub
+	validator    TokenValidator
+	logger       *zap.Logger
+	upgrader     websocket.Upgrader
+	redisLimiter *ratelimit.RedisRateLimiter
 }
 
-func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v TokenValidator, l *zap.Logger) *WebSocketHandler {
+func NewWebSocketHandler(cfg *config.Config, h *hub.Hub, v TokenValidator, l *zap.Logger, redisLimiter *ratelimit.RedisRateLimiter) *WebSocketHandler {
 	return &WebSocketHandler{
-		cfg:       cfg,
-		hub:       h,
-		validator: v,
-		logger:    l,
+		cfg:          cfg,
+		hub:          h,
+		validator:    v,
+		logger:       l,
+		redisLimiter: redisLimiter,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -90,7 +93,23 @@ func (h *WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := hub.NewClient(h.hub, conn, claims.Subject, claims.Email, traceID, h.cfg.RateLimitAuthenticated, h.cfg.RateLimitAuthenticatedBurst, h.logger)
+	var maxDuration time.Duration
+	if h.cfg.ConnectionMaxDurationMinutes > 0 {
+		maxDuration = time.Duration(h.cfg.ConnectionMaxDurationMinutes) * time.Minute
+	}
+
+	client := hub.NewClient(hub.ClientOptions{
+		Hub:            h.hub,
+		Conn:           conn,
+		UserID:         claims.Subject,
+		Email:          claims.Email,
+		TraceID:        traceID,
+		RateLimit:      h.cfg.RateLimitAuthenticated,
+		RateLimitBurst: h.cfg.RateLimitAuthenticatedBurst,
+		Logger:         h.logger,
+		RedisLimiter:   h.redisLimiter,
+		MaxDuration:    maxDuration,
+	})
 	h.hub.Register(client)
 
 	go client.WritePump()

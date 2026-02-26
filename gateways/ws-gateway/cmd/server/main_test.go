@@ -8,16 +8,24 @@ import (
 	"github.com/joaosimsic/hermes/ws-gateway/internal/config"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/handlers"
 	"github.com/joaosimsic/hermes/ws-gateway/internal/hub"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/protocol"
+	"github.com/joaosimsic/hermes/ws-gateway/internal/types"
 	"go.uber.org/zap"
 )
 
 type MockPublisher struct{}
 
-func (m *MockPublisher) PublishMessage(s string, msg *any) error { return nil }
-func (m *MockPublisher) PublishTyping(u, c string) error         { return nil }
-func (m *MockPublisher) PublishMarkRead(u, c, mID string) error  { return nil }
-func (m *MockPublisher) PublishPresence(u, s string) error       { return nil }
-func (m *MockPublisher) PublishUserOnline(u string) error        { return nil }
+func (m *MockPublisher) PublishMessage(ctx types.MessageContext, msg *protocol.SendMessagePayload) error {
+	return nil
+}
+func (m *MockPublisher) PublishTyping(ctx types.MessageContext, conversationID string) error {
+	return nil
+}
+func (m *MockPublisher) PublishMarkRead(ctx types.MessageContext, conversationID, messageID string) error {
+	return nil
+}
+func (m *MockPublisher) PublishPresence(userID, status, traceID string) error { return nil }
+func (m *MockPublisher) PublishUserOnline(userID, traceID string) error       { return nil }
 
 func TestHealthEndpoints(t *testing.T) {
 	healthHandler := &handlers.HealthHandler{}
@@ -63,11 +71,11 @@ func TestLoggerInitialization(t *testing.T) {
 }
 
 func TestMuxRegistration(t *testing.T) {
-	cfg := &config.Config{Profile: "dev"}
+	cfg := &config.Config{Profile: "dev", RateLimitAuthenticated: 100, RateLimitAuthenticatedBurst: 150}
 	logger := zap.NewNop()
-	h := hub.NewHub(nil, logger) 
+	h := hub.NewHub(&MockPublisher{}, logger)
 
-	wsHandler := handlers.NewWebSocketHandler(cfg, h, nil, logger)
+	wsHandler := handlers.NewWebSocketHandler(cfg, h, nil, logger, nil)
 	healthHandler := &handlers.HealthHandler{}
 
 	mux := http.NewServeMux()
@@ -84,5 +92,5 @@ func TestMuxRegistration(t *testing.T) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[:len(substr)] == substr || true 
+	return len(s) >= len(substr) && s[:len(substr)] == substr || true
 }
