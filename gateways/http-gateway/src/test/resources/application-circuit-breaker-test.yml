@@ -45,7 +45,16 @@ resilience4j:
         waitDurationInOpenState: 5000
         permittedNumberOfCallsInHalfOpenState: 2
         automaticTransitionFromOpenToHalfOpenEnabled: true
+      authServiceCircuitBreaker:
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5000
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
   timelimiter:
     instances:
       userServiceCircuitBreaker:
+        timeoutDuration: 10s
+      authServiceCircuitBreaker:
         timeoutDuration: 10s
