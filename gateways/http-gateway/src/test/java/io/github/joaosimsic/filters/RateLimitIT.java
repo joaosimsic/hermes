@@ -153,14 +153,14 @@ public class RateLimitIT {
   }
 
   @Test
-  void shouldDifferentiateByUserEmailForAuthenticatedRequests() throws NoSuchAlgorithmException {
-    String user1Email = "differentiation-user1-" + System.currentTimeMillis() + "@example.com";
-    String user2Email = "differentiation-user2-" + System.currentTimeMillis() + "@example.com";
+  void shouldDifferentiateByUserIdForAuthenticatedRequests() throws NoSuchAlgorithmException {
+    String user1Id = "user1-" + System.currentTimeMillis();
+    String user2Id = "user2-" + System.currentTimeMillis();
 
     String user1Token =
         Jwts.builder()
-            .setSubject("user1-differentiation")
-            .claim("email", user1Email)
+            .setSubject(user1Id)
+            .claim("email", "user1@example.com")
             .setHeaderParam("kid", "test-key-id")
             .setIssuer("test-issuer")
             .setIssuedAt(new Date())
@@ -170,8 +170,8 @@ public class RateLimitIT {
 
     String user2Token =
         Jwts.builder()
-            .setSubject("user2-differentiation")
-            .claim("email", user2Email)
+            .setSubject(user2Id)
+            .claim("email", "user2@example.com")
             .setHeaderParam("kid", "test-key-id")
             .setIssuer("test-issuer")
             .setIssuedAt(new Date())

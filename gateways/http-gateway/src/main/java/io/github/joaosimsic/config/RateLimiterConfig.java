@@ -17,9 +17,9 @@ public class RateLimiterConfig {
   @Primary
   KeyResolver userKeyResolver() {
     return exchange -> {
-      String userEmail = exchange.getAttribute("userEmail");
-      if (userEmail != null) {
-        return Mono.just("user:" + userEmail);
+      String userId = exchange.getAttribute("userId");
+      if (userId != null) {
+        return Mono.just("user:" + userId);
       }
       String ip =
           exchange.getRequest().getRemoteAddress() != null
