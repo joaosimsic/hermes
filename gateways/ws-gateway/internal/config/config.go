@@ -26,17 +26,17 @@ type Config struct {
 	FrontendURL        string `envconfig:"FRONTEND_URL"`
 	CorsAllowedOrigins string `envconfig:"CORS_ALLOWED_ORIGINS"`
 
-	RedisHost string `envconfig:"GATEWAY_CACHE_HOST" default:"localhost"`
-	RedisPort int    `envconfig:"REDIS_PORT" default:"6379"`
+	RedisHost string `envconfig:"GATEWAY_CACHE_HOST" required:"true"`
+	RedisPort int    `envconfig:"REDIS_PORT" required:"true"`
 
-	CircuitBreakerSlidingWindowSize                     int `envconfig:"CB_SLIDING_WINDOW_SIZE" default:"10"`
-	CircuitBreakerMinimumNumberOfCalls                  int `envconfig:"CB_MINIMUM_NUMBER_OF_CALLS" default:"5"`
-	CircuitBreakerFailureRateThreshold                  int `envconfig:"CB_FAILURE_RATE_THRESHOLD" default:"50"`
-	CircuitBreakerWaitDurationInOpenStateSeconds        int `envconfig:"CB_WAIT_DURATION_OPEN_STATE_SECONDS" default:"30"`
-	CircuitBreakerPermittedNumberOfCallsInHalfOpenState int `envconfig:"CB_PERMITTED_CALLS_HALF_OPEN" default:"3"`
+	CircuitBreakerSlidingWindowSize                     int `envconfig:"CB_SLIDING_WINDOW_SIZE" required:"true"`
+	CircuitBreakerMinimumNumberOfCalls                  int `envconfig:"CB_MINIMUM_NUMBER_OF_CALLS" required:"true"`
+	CircuitBreakerFailureRateThreshold                  int `envconfig:"CB_FAILURE_RATE_THRESHOLD" required:"true"`
+	CircuitBreakerWaitDurationInOpenStateSeconds        int `envconfig:"CB_WAIT_DURATION_OPEN_STATE_SECONDS" required:"true"`
+	CircuitBreakerPermittedNumberOfCallsInHalfOpenState int `envconfig:"CB_PERMITTED_CALLS_HALF_OPEN" required:"true"`
 
-	TimeLimiterTimeoutSeconds    int `envconfig:"TIME_LIMITER_TIMEOUT_SECONDS" default:"10"`
-	ConnectionMaxDurationMinutes int `envconfig:"CONNECTION_MAX_DURATION_MINUTES" default:"0"`
+	TimeLimiterTimeoutSeconds    int `envconfig:"TIME_LIMITER_TIMEOUT_SECONDS" required:"true"`
+	ConnectionMaxDurationMinutes int `envconfig:"CONNECTION_MAX_DURATION_MINUTES" required:"true"`
 }
 
 func Load() (*Config, error) {
