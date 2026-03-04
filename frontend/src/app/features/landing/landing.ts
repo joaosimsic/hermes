@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -8,6 +8,9 @@ import { RouterLink } from '@angular/router';
   templateUrl: './landing.html',
 })
 export class Landing {
+  @ViewChild('menuButton') menuButton?: ElementRef;
+  @ViewChild('mobileMenu') mobileMenu?: ElementRef;
+
   protected isMenuOpen = false;
 
   protected readonly navLinks = [
@@ -34,4 +37,18 @@ export class Landing {
         'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
     },
   ];
+
+  @HostListener('document:click', ['$event'])
+  handleOutsideClick(event: Event) {
+    if (!this.isMenuOpen) return;
+
+    const target = event.target as Node;
+
+    const clickedOutsideMenu = this.mobileMenu && !this.mobileMenu.nativeElement.contains(target);
+    const clickedOutsideButton = this.menuButton && !this.menuButton.nativeElement.contains(target);
+
+    if (clickedOutsideMenu && clickedOutsideButton) {
+      this.isMenuOpen = false;
+    }
+  }
 }
