@@ -14,8 +14,8 @@ export class Landing {
   protected isMenuOpen = false;
 
   protected readonly navLinks = [
-    { label: 'Log In', route: '/login', style: 'text' },
-    { label: 'Get Started', route: '/signup', style: 'button' },
+    { label: 'Features', route: '#features', style: 'text' },
+    { label: 'Wait List', route: '#waitList', style: 'button' },
   ];
 
   protected readonly features = [

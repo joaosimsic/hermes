@@ -27,3 +27,7 @@
 @utility glass-light {
   @apply backdrop-blur-lg bg-main/10 border border-main/20;
 }
+
+html {
+  scroll-behavior: smooth;
+}
