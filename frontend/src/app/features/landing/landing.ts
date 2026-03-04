@@ -8,6 +8,8 @@ import { RouterLink } from '@angular/router';
   templateUrl: './landing.html',
 })
 export class Landing {
+  protected isMenuOpen = false;
+
   protected readonly navLinks = [
     { label: 'Log In', route: '/login', style: 'text' },
     { label: 'Get Started', route: '/signup', style: 'button' },
